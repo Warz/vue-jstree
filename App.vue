@@ -401,26 +401,13 @@
                 console.log(node.model.text + ' drag end !')
             },
             itemDropBefore (node, item, draggedItem , e) {
-
-                let newNode = {
-                    text: "newNode",
-                    value: "newNode"
-                };
-
                 // If there's no item (we're dropping an empty html object like <span></span> we'll create a new node
                 // based upon it and use hovered node to determined position to place it
-                if (!draggedItem) {
-
-                    if(node.dropPosition === "2") {
-                        // 2 = putting it into a node
-                        item.addChild(newNode)
-                    } else if(node.dropPosition === "1") {
-                        // 1 = putting it above the node
-                        item.addBefore(newNode,node)
-                    } else {
-                        // 3 = putting it after the node
-                        item.addAfter(newNode,node)
-                    }
+                if(!draggedItem) {
+                    item.addToPosition({
+                        text: "newNode",
+                        value: "newNode"
+                    }, node);
                 }
             },
             itemDrop (node, item) {

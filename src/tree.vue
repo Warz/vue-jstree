@@ -153,6 +153,36 @@
                     node.opened = true
                     node[self.childrenFieldName].push(newItem)
                 }
+                /**
+                 * Add item to position of the arrow next to selected/hovered node
+                 *
+                 * There are three positions:
+                 * - Above the node
+                 * - Inside the node
+                 * - Below the node
+                 *
+                 * You can optionally specify position to force a specific position
+                 *
+                 * @author Warz
+                 */
+                node.addToPosition = function(data, selectedNode, position) {
+
+                    position = position || selectedNode.dropPosition;
+
+                    switch(position) {
+                        // 1 = putting it above the node
+                        case "1":
+                            node.addBefore(data,selectedNode);
+                            break;
+                        // 2 = putting it into a node
+                        case "2":
+                            node.addChild(data);
+                            break;
+                        // 3 = putting it after the node
+                        default:
+                            node.addAfter(data,selectedNode);
+                    }
+                }
                 node.openChildren = function () {
                     node.opened = true
                     self.handleRecursionNodeChildren(node, node => {
@@ -313,7 +343,6 @@
                 }
                 return true
             },
-
             onItemDrop(e, oriNode, oriItem, position) {
 
                 if (!this.draggable) return false;
@@ -325,7 +354,7 @@
                     this.$emit('item-drop-multi-tree', oriNode, oriItem, e);
                 }
                 else{
-                    
+
                     if (this.draggedItem && oriItem[this.childrenFieldName] !== this.draggedItem.item[this.childrenFieldName]) {
 
                         var newParent = ''
