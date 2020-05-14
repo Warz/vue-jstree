@@ -286,7 +286,7 @@
                     {
                         "text": "drop disabled",
                         "icon": "fa fa-warning icon-state-danger",
-                        "dropDisabled": true
+                        "canDrop": false
                     }
                 ],
                 data2: [

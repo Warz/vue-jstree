@@ -345,7 +345,7 @@
             },
             onItemDrop(e, oriNode, oriItem, position) {
 
-                if (!this.draggable || !!oriItem.dropDisabled)
+                if (!this.draggable)
                     return false
 
                 this.$emit("item-drop-before", oriNode, oriItem, !this.draggedItem ? undefined : this.draggedItem.item, e)
