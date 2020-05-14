@@ -403,7 +403,7 @@
             itemDropBefore (node, item, draggedItem , e) {
                 // If there's no item (we're dropping an empty html object like <span></span> we'll create a new node
                 // based upon it and use hovered node to determined position to place it
-                if(!draggedItem) {
+                if(!draggedItem && item.dragDisabled === false) {
                     item.addToPosition({
                         text: "newNode",
                         value: "newNode"
