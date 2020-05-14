@@ -316,14 +316,16 @@
 
             onItemDrop(e, oriNode, oriItem, position) {
 
-                if (!this.draggable) return false
+                if (!this.draggable) return false;
+
+                this.$emit("item-drop-before", oriNode, oriItem, !this.draggedItem ? undefined : this.draggedItem.item, e)
+
                 if(this.multiTree && !this.allowMultiTreeAndUsual){
                     //for multiTree case - emit drop node, item, and event, emitting even on left/right drop position
                     this.$emit('item-drop-multi-tree', oriNode, oriItem, e);
                 }
                 else{
-                    this.$emit('item-drop-multi-tree', oriNode, oriItem, e);
-
+                    
                     if (this.draggedItem && oriItem[this.childrenFieldName] !== this.draggedItem.item[this.childrenFieldName]) {
 
                         var newParent = ''
