@@ -211,14 +211,38 @@
                 }
                 node.moveLeftTo = function(draggedItem, anchorNode, oriIndex){
 
-                    draggedItem.parentItem.splice(draggedItem.index, 1)
-                    anchorNode.parentItem.splice(oriIndex, 0, draggedItem.item);
+                    let index = oriIndex;
+                    let isSameParents = draggedItem.parentItem === anchorNode.parentItem;
+                    let isFurtherDown = draggedItem.index < oriIndex;
 
+                    draggedItem.parentItem.splice(draggedItem.index, 1);
+
+                    if(isSameParents && isFurtherDown) {
+                        // The array of items will have it's index changed with -1 if you pull out an item
+                        // higher up. So if we're using the same index to place item as where we grab it from
+                        // we have to adjust for that or we'd end up placing the item 1 position too low.
+                        index--;
+                    }
+
+                    anchorNode.parentItem.splice(index, 0, draggedItem.item);
                 }
                 node.moveRightTo = function(draggedItem, anchorNode, oriIndex){
 
-                    draggedItem.parentItem.splice(draggedItem.index, 1)
-                    anchorNode.parentItem.splice(oriIndex+1, 0, draggedItem.item);
+                    let index = oriIndex + 1; // + 1 to place it below item
+                    let isSameParents = draggedItem.parentItem === anchorNode.parentItem;
+                    let isFurtherDown = draggedItem.index < oriIndex;
+
+                    draggedItem.parentItem.splice(draggedItem.index, 1);
+
+                    if(isSameParents && isFurtherDown) {
+                        // The array of items will have it's index changed with -1 if you pull out an item
+                        // higher up. So if we're using the same index to place item as where we grab it from
+                        // we have to adjust for that or we'd end up placing the item 1 position too low.
+                        index--;
+                    }
+
+                    anchorNode.parentItem.splice(index, 0, draggedItem.item);
+
                 }
                 node.deleteNode = function (selectedNode) {
                     let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
@@ -308,7 +332,8 @@
             onItemDragStart(e, oriNode, oriItem) {
 
                 if (!this.draggable || oriItem.dragDisabled)
-                    return false
+                    return false;
+
                 if(this.multiTree){
 
                     this.draggedItem = {
@@ -377,10 +402,12 @@
                         }
                         else if (oriNode.parentItem) {
                             /** Item is droped before or under existing item ****/
+;
+                            if (oriNode.parentId) newParent = oriNode.parentId;
 
-                            if (oriNode.parentId) newParent = oriNode.parentId
                             // Find position of destination item in the parent group
-                            var oriIndex = oriNode.parentItem.indexOf(oriItem)
+                            var oriIndex = oriNode.parentItem.findIndex(node => node.id === oriItem.id);
+
                             var anchor_modificator = '';
                             if (position === '1') {
                                 //before anchor node
@@ -399,7 +426,6 @@
                             }
 
                             this.$emit('item-drop-sibling'+anchor_modificator, oriNode, oriItem, this.draggedItem, oriIndex,e)
-
 
                         }
 
