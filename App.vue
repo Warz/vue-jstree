@@ -401,9 +401,10 @@
                 console.log(node.model.text + ' drag end !')
             },
             itemDropBefore (node, item, draggedItem , e) {
+                
                 // If there's no item (we're dropping an empty html object like <span></span> we'll create a new node
                 // based upon it and use hovered node to determined position to place it
-                if(!draggedItem && item.dragDisabled === false) {
+                if(!draggedItem && (item.dragDisabled === false || item.dragDisabled === undefined)) {
                     item.addToPosition({
                         text: "newNode",
                         value: "newNode"
@@ -411,6 +412,7 @@
                 }
             },
             itemDrop (node, item) {
+
                 var sortBy = function(attr,rev) {
                     if (rev == undefined) {
                         rev = 1;
