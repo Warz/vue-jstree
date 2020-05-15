@@ -197,11 +197,16 @@
                 }
                 node.moveTo = function(draggedItem, anchorNode){
 
+                    // clone draggedItem
                     var swapItem = Object.assign({},draggedItem);
-                    draggedItem.parentItem.splice(draggedItem.index, 1)
-                    anchorNode.children = anchorNode.children ? anchorNode.children.concat(swapItem.item) : [swapItem.item]
-                    anchorNode.opened = true
 
+                    // remove the dragged item from the parent list of items in preparation of placing it somewhere else
+                    draggedItem.parentItem.splice(draggedItem.index, 1)
+
+                    // add item as child
+                    anchorNode[self.childrenFieldName].push(swapItem.item);
+
+                    anchorNode.opened = true
 
                 }
                 node.moveLeftTo = function(draggedItem, anchorNode, oriIndex){
@@ -368,7 +373,6 @@
                             }
 
                             this.$emit('item-drop', oriNode, oriItem, this.draggedItem, e)
-
 
                         }
                         else if (oriNode.parentItem) {
