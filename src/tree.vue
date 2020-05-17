@@ -24,6 +24,8 @@
                        :expand-timer="expandTimer"
                        :expand-timer-time-out="expandTimerTimeOut"
                        :show-drop-position="showDropPosition"
+                       :allowed-to-drop="allowedToDrop"
+                       :current-is-draggable="currentIsDraggable"
 
             >
                 <template slot-scope="_">
@@ -80,7 +82,8 @@
         data() {
             return {
                 draggedItem: undefined,
-                draggedElm: undefined
+                draggedElm: undefined,
+                currentIsDraggable : true,
             }
         },
         computed: {
@@ -331,8 +334,23 @@
             },
             onItemDragStart(e, oriNode, oriItem) {
 
-                if (!this.draggable || oriItem.dragDisabled)
+                if (!this.allowedToDrag(oriItem)) {
+
+                    // The dragged item isn't draggable
+                    this.currentIsDraggable = false;
+
+                    // Hide item during drag:
+                    e.target.style.opacity = '0';
+
+                    // Since dragstart event freezes style during drag operation we can reset style immediately
+                    // without impacting it. As soon as user drops the item it will reset back to original.
+                    setTimeout(() => e.target.style.opacity = '1',1);
+
+                    // Set mouse pointer to forbidden pointer during drag:
+                    e.dataTransfer.effectAllowed = 'none';
+
                     return false;
+                }
 
                 if(this.multiTree){
 
@@ -359,19 +377,28 @@
             onItemDragEnd(e, oriNode, oriItem) {
                 this.draggedItem = undefined
                 this.draggedElm = undefined
+                this.currentIsDraggable = true;
                 this.$emit("item-drag-end", oriNode, oriItem, e)
             },
             allowedToDrop (oriItem, position) {
+
                 if (!this.draggable || !this.draggedItem) {
                     return false
                 }
-                if (position === '2' && oriItem.canDrop === false) return false
+                if (position === '2' && oriItem.dropDisabled === true) {
+                    return false
+                }
+
                 if (this.draggedItem.parentItem === oriItem.children ||
                     this.draggedItem.item === oriItem ||
                     (this.draggedItem.item.children && this.draggedItem.item.children.indexOf(oriItem) !== -1)) {
                     return false
                 }
+
                 return true
+            },
+            allowedToDrag(oriItem) {
+                return this.draggable && !oriItem.dragDisabled;
             },
             onItemDrop(e, oriNode, oriItem, position) {
 

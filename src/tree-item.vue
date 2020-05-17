@@ -41,7 +41,10 @@
                        :klass="index === model[childrenFieldName].length-1?'tree-last':''"
                        :expand-timer="expandTimer"
                        :expand-timer-time-out="expandTimerTimeOut"
-                       :show-drop-position="showDropPosition">
+                       :show-drop-position="showDropPosition"
+                       :allowed-to-drop="allowedToDrop"
+                       :current-is-draggable="currentIsDraggable"
+            >
                 <template slot-scope="_">
                     <slot :vm="_.vm" :model="_.model">
                         <i :class="_.vm.themeIconClasses" role="presentation" v-if="!model.loading"></i>
@@ -102,7 +105,7 @@
           expandTimer:{type: Boolean, default: false},
           expandTimerTimeOut:{type: Number, default: 1500},
           showDropPosition:{type: Boolean, default: true},
-
+          currentIsDraggable: { type: Boolean }
       },
       data () {
           return {
@@ -120,19 +123,26 @@
 
           isHover(newValue){
 
+          //    console.log('isHover:',newValue);
               if(newValue){
-                  this.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                  // if current dragged item is not set, we're dealing with an item that cant be dragged, so dont show background on targets
+                  if(this.currentIsDraggable) {
+                      this.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                  }
               }else{
-
+                  //this.$el.style.backgroundColor = "inherit"
                   this.$el.style.backgroundColor = '';
               }
           },
           isDragEnter(newValue){
 
               if(newValue){
-                  this.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                  // if current dragged item is not set, we're dealing with an item that cant be dragged, so dont show background on targets
+                  if(this.currentIsDraggable) {
+                      this.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                  }
               }else{
-
+                  //this.$el.style.backgroundColor = "inherit"
                   this.$el.style.backgroundColor = '';
               }
           },
@@ -166,6 +176,7 @@
                   {'tree-leaf': !this.isFolder},
                   {'tree-loading': !!this.model.loading},
                   {'tree-drag-enter': this.isDragEnter},
+                  {'tree-drag-disabled': this.model.dragDisabled},
                   {[this.klass]: !!this.klass}
               ]
           },
@@ -223,17 +234,19 @@
               }
           },
           onThisItemDragEnd (e, _self, model) {
-              this.dropPosition = '0'
-              this.dropCss = ''
+              this.dropPosition = '0';
+              this.dropCss = '';
               this.onItemDragEnd(e, _self, model)
           },
           onDragState (entered) {
+
               if (entered) {
-                  this.isDragEnter = true
+                  this.isDragEnter = true;
               } else {
-                  this.isDragEnter = false
-                  this.dropPosition = '0'
-                  this.dropCss = ''
+                  this.isDragEnter = false;
+                  // when we leave item (drag outside of it) clear all the css (green arrow etc)
+                  this.dropPosition = '0';
+                  this.dropCss = '';
               }
           },
           handleItemToggle (e) {
@@ -243,23 +256,23 @@
           },
           handleGroupMaxHeight () {
               if (!!this.allowTransition) {
-                  let length = 0
-                  let childHeight = 0
+                  let length = 0;
+                  let childHeight = 0;
                   if (this.model.opened) {
-                      length = this.$children.length
+                      length = this.$children.length;
                       for (let children of this.$children) {
-                          childHeight += children.maxHeight
+                          childHeight += children.maxHeight;
                       }
                   }
-                  this.maxHeight = length * this.height + childHeight
+                  this.maxHeight = length * this.height + childHeight;
                   if (this.$parent.$options._componentTag === 'tree-item') {
-                      this.$parent.handleGroupMaxHeight()
+                      this.$parent.handleGroupMaxHeight();
                   }
               }
           },
           handleItemClick (e) {
-              if (this.model.disabled) return
-              this.model.selected = !this.model.selected
+              if (this.model.disabled) return;
+              this.model.selected = !this.model.selected;
               this.onItemClick(this, this.model, e)
           },
           handleItemMouseOver () {
@@ -269,15 +282,30 @@
               this.isHover = false
           },
           handleItemDrop (e, oriNode, oriItem) {
-              //this.$el.style.backgroundColor = "inherit";
+              this.$el.style.backgroundColor = "inherit";
               this.onItemDrop(e, oriNode, oriItem, this.dropPosition);
               this.dropPosition = '0';
               this.dropCss = '';
           },
-          getDropPosition (pageY, offsetTop, offsetHeight) {
+          /**
+           * Calculate position based on where user has placed mouse
+           * @param pageY
+           * @param offsetTop
+           * @param offsetHeight
+           * @param checkDropPermission bool (default false)
+           * @returns {string}
+           */
+          getDropPosition (pageY, offsetTop, offsetHeight,checkDropPermission) {
               // 340 - 326 = top = 14. height = 24
-              const top = pageY - offsetTop
-              let canDrop = this.model.canDrop || true;
+              const top = pageY - offsetTop;
+              checkDropPermission = checkDropPermission || false;
+
+              let canDrop = true;
+
+              if(checkDropPermission) {
+                  canDrop = !this.model.dropDisabled;
+              }
+
               if (canDrop) {
 
                   if (top < offsetHeight / 3) {
@@ -299,19 +327,44 @@
           },
           onItemDragOver (e, oriNode, oriItem) {
 
-              if (!oriItem.edited) {
-                  const oriPoz = oriNode.$el.getBoundingClientRect()
-                  const position = this.getDropPosition(e.clientY, oriPoz.top, 24).toString()
+                this.isDragEnter = true;
 
-                  if (this.dropPosition !== position) {
-                      this.dropPosition = position
-                      var dropCss = 'tree-marker-' + position
-                      if (!this.allowedToDrop(oriItem, position)) dropCss += ' not-allowed'
-                      if(this.showDropPosition){
-                          this.dropCss = dropCss;
+                //if (!oriItem.edited) {
+                const oriPoz = oriNode.$el.getBoundingClientRect();
+                const position = this.getDropPosition(e.clientY, oriPoz.top, 24).toString();
+
+                // only run when we actually change position (this.dropPosition is previous):
+                if (this.dropPosition !== position) {
+                    this.dropPosition = position;
+
+                    var dropCss ='';
+
+                    // If we're not allowed to drag the item we're currently dragging then just hide the market completely
+                    if(this.currentIsDraggable) {
+                        dropCss = 'tree-marker-' + position
+                    }
+
+                    if (!this.allowedToDrop(oriItem, position)) {
+
+                        if(this.currentIsDraggable) {
+
+                            if(position === DropPosition.inside) {
+                                // set background color to red to indicate that dropping here is not allowed
+                                oriNode.$el.style.backgroundColor = '#ff928d';
+
+                                // hide the green arrow marker/pointer when trying to drop into it:
+                                // dropCss += ' not-allowed'
+                            } else {
+                                oriNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                            }
                       }
 
+                  } else {
+                      oriNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                  }
 
+                  if(this.showDropPosition){
+                      this.dropCss = dropCss;
                   }
               }
           },
