@@ -186,27 +186,49 @@
                 </div>
             </div>
         </div>
+        <vue-context ref="menu">
+            <li><a href="" @click.prevent="addChildNode">New</a></li>
+            <li><a href="" @click.prevent="setAction('cut')">Cut</a></li>
+            <li><a href="" @click.prevent="setAction('copy')">Copy</a></li>
+            <li><a href="" @click.prevent="pasteNode" :class="{'paste-disabled' : !activeCutOrCopy}">Paste</a></li>
+            <li><a href="" @click.prevent="removeNode">Delete</a></li>
+        </vue-context>
     </div>
 </template>
 
 <script>
+
+    import { VueContext } from 'vue-context';
+
     export default {
         name: 'app',
+        components: {
+            VueContext
+        },
         data () {
+            var vm = this;
             return {
                 msg: 'A Tree Plugin For Vue2',
                 searchText: '',
                 editingItem: {},
                 editingNode: null,
+                cutNode : null,
+                copyNode : null,
                 itemEvents: {
-
                     mouseover: function () {
                         console.log('mouseover')
                     },
-                    contextmenu: function () {
+                    contextmenu: function (node,model,event) {
                         console.log(arguments[2])
                         arguments[2].preventDefault()
                         console.log('contextmenu')
+
+                        // Mark active node
+                        vm.editingNode = node;
+                        vm.editingItem = node.model;
+
+                        // Open the menu
+                        vm.$refs.menu.open(event,model);
                     }
                 },
                 data: [
@@ -286,7 +308,7 @@
                     {
                         "text": "drop disabled",
                         "icon": "fa fa-warning icon-state-danger",
-                        "canDrop": false
+                        "dropDisabled": true
                     }
                 ],
                 data2: [
@@ -388,7 +410,75 @@
                 multiTree:false
             }
         },
+        computed: {
+            activeCutOrCopy() {
+                return this.cutNode !== null || this.copyNode !== null;
+            }
+        },
         methods: {
+            setAction(action) {
+                if(action === 'cut') {
+                    this.cutNode = this.editingNode;
+                    this. copyNode = null
+                } else if (action === 'copy') {
+                    this.copyNode = this.editingNode;
+                }
+            },
+            onClickInMenu(txt) {
+                console.log('You clicked: ' + txt);
+            },
+            /**
+             * Create a clone for the node item and it's children
+             * Will clonse only essential properties (stripping id and methods)
+             */
+            cloneNodeItem(node) {
+                let newNode = {
+                    opened: node.opened,
+                    selected: node.selected,
+                    text: node.text,
+                    value: node.value,
+                    disabled: node.disabled,
+                    icon: node.icon,
+                    loading: node.loading,
+                    children: [],
+                };
+
+                if(node.children.length) {
+                    node.children.forEach(child => {
+                        newNode.children.push(this.cloneNodeItem(child));
+                    })
+                }
+
+                return newNode;
+            },
+            pasteNode() {
+                if( ! this.activeCutOrCopy) {
+                    return;
+                }
+
+                if(this.copyNode) {
+
+                    // Get rid of id and methods and create a clone ready for insert
+                    let stripped = this.cloneNodeItem(this.copyNode.model);
+
+                    this.editingItem.addChild(stripped);
+                }
+
+                if(this.cutNode) {
+                    // clone it
+                    let node = Object.assign({},this.cutNode);
+
+                    if( this.editingItem === node.model) {
+                        return;
+                    }
+
+                    // todo: replace with moveTo (?)
+                    this.editingItem.addChild(node.model);
+                    this.cutNode.model.deleteNode(this.cutNode);
+                }
+
+                this.cutNode = null;
+            },
             itemClick (node) {
                 this.editingNode = node
                 this.editingItem = node.model
@@ -401,10 +491,8 @@
                 console.log(node.model.text + ' drag end !')
             },
             itemDropBefore (node, item, draggedItem , e) {
-                
-                // If there's no item (we're dropping an empty html object like <span></span> we'll create a new node
-                // based upon it and use hovered node to determined position to place it
-                if(!draggedItem && (item.dragDisabled === false || item.dragDisabled === undefined)) {
+                // If dropping an html element into the tree create a new node
+                if(!draggedItem && this.$refs.tree.currentIsDraggable) {
                     item.addToPosition({
                         text: "newNode",
                         value: "newNode"
@@ -412,7 +500,7 @@
                 }
             },
             itemDrop (node, item) {
-
+                /*
                 var sortBy = function(attr,rev) {
                     if (rev == undefined) {
                         rev = 1;
@@ -432,7 +520,7 @@
                     }
                 }
                 item.children.sort(sortBy('text', true))
-                console.log(node.model.text + ' drop !')
+                console.log(node.model.text + ' drop !')*/
             },
             inputKeyUp: function () {
                 var text = this.searchText
@@ -457,7 +545,7 @@
                     })
                 }
             },
-            removeNode: function () {
+            removeNode: function (item) {
                 if (this.editingItem.id !== undefined) {
                     var index = this.editingNode.parentItem.indexOf(this.editingItem)
                     this.editingNode.parentItem.splice(index, 1)
@@ -576,5 +664,9 @@
     }
     .icon-state-success {
         color: green;
+    }
+    
+    .paste-disabled {
+        opacity: 0.3;
     }
 </style>
