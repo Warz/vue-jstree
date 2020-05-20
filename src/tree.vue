@@ -124,7 +124,6 @@
                 if (nodes && nodes.length > 0) {
                     for (let i in nodes) {
                         nodes[i] = this.initializeNode(nodes[i]);
-                        this.initializeNodes(nodes[i][this.childrenFieldName]);
                     }
                 }
             },
