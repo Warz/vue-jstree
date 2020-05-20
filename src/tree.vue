@@ -107,25 +107,28 @@
             sizeHeight() {
                 switch (this.size) {
                     case 'large':
-                        return ITEM_HEIGHT_LARGE
+                        return ITEM_HEIGHT_LARGE;
                     case 'small':
-                        return ITEM_HEIGHT_SMALL
+                        return ITEM_HEIGHT_SMALL;
                     default:
-                        return ITEM_HEIGHT_DEFAULT
+                        return ITEM_HEIGHT_DEFAULT;
                 }
             }
         },
         methods: {
-            initializeData(items) {
-                if (items && items.length > 0) {
-                    for (let i in items) {
-                        var dataItem = this.initializeDataItem(items[i])
-                        items[i] = dataItem
-                        this.initializeData(items[i][this.childrenFieldName])
+            /**
+             * Initialize nodes takes a json object and return node objects
+             * @param nodes
+             */
+            initializeNodes(nodes) {
+                if (nodes && nodes.length > 0) {
+                    for (let i in nodes) {
+                        nodes[i] = this.initializeNode(nodes[i]);
+                        this.initializeNodes(nodes[i][this.childrenFieldName]);
                     }
                 }
             },
-            initializeDataItem(item) {
+            initializeNode(item) {
                 let self = this;
                 function Model(item, textFieldName, valueFieldName, childrenFieldName, collapse) {
                     this.id = item.id || ITEM_ID++
@@ -136,23 +139,23 @@
                     this.selected = item.selected || false
                     this.disabled = item.disabled || false
                     this.loading = item.loading || false
-                    this[childrenFieldName] = self.initializeData(item[childrenFieldName]) || []
+                    this[childrenFieldName] = self.initializeNodes(item[childrenFieldName]) || []
                 }
 
                 let node = Object.assign(new Model(item, this.textFieldName, this.valueFieldName, this.childrenFieldName, this.collapse), item)
 
                 node.addBefore = function (data, selectedNode) {
-                    let newItem = self.initializeDataItem(data)
+                    let newItem = self.initializeNode(data)
                     let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
                     selectedNode.parentItem.splice(index, 0, newItem)
                 }
                 node.addAfter = function (data, selectedNode) {
-                    let newItem = self.initializeDataItem(data)
+                    let newItem = self.initializeNode(data)
                     let index = selectedNode.parentItem.findIndex(t => t.id === node.id) + 1
                     selectedNode.parentItem.splice(index, 0, newItem)
                 }
                 node.addChild = function (data) {
-                    let newItem = self.initializeDataItem(data)
+                    let newItem = self.initializeNode(data)
                     node.opened = true
                     node[self.childrenFieldName].push(newItem)
                 }
@@ -258,7 +261,7 @@
                 item[this.textFieldName] = this.loadingText
                 item.disabled = true
                 item.loading = true
-                return this.initializeDataItem(item)
+                return this.initializeNode(item)
             },
             handleRecursionNodeChilds(node, func) {
                 if (func(node) !== false) {
@@ -280,38 +283,38 @@
                     }
                 }
             },
-            onItemClick(oriNode, oriItem, e) {
+            onItemClick(targetNode, e) {
                 if (this.multiple) {
                     if (this.allowBatch) {
-                        this.handleBatchSelectItems(oriNode, oriItem)
+                        this.handleBatchSelectItems(targetNode)
                     }
                 } else {
-                    this.handleSingleSelectItems(oriNode, oriItem)
+                    this.handleSingleSelectItems(targetNode)
                 }
-                this.$emit('item-click', oriNode, oriItem, e)
+                this.$emit('item-click', targetNode, targetNode.model, e)
             },
-            handleSingleSelectItems(oriNode, oriItem) {
+            handleSingleSelectItems(targetNode) {
                 this.handleRecursionNodeChilds(this, node => {
                     if (node.model) node.model.selected = false
                 })
-                oriNode.model.selected = true
+                targetNode.model.selected = true
             },
-            handleBatchSelectItems(oriNode, oriItem) {
-                this.handleRecursionNodeChilds(oriNode, node => {
+            handleBatchSelectItems(targetNode) {
+                this.handleRecursionNodeChilds(targetNode, node => {
                     if (node.model.disabled) return
-                    node.model.selected = oriNode.model.selected
+                    node.model.selected = targetNode.model.selected
                 })
             },
-            onItemToggle(oriNode, oriItem, e) {
-                if (oriNode.model.opened) {
-                    this.handleAsyncLoad(oriNode.model[this.childrenFieldName], oriNode, oriItem)
+            onItemToggle(targetNode, e) {
+                if (targetNode.model.opened) {
+                    this.handleAsyncLoad(targetNode.model[this.childrenFieldName], targetNode)
                 }
-                this.$emit('item-toggle', oriNode, oriItem, e)
+                this.$emit('item-toggle', targetNode, targetNode.model, e)
             },
-            handleAsyncLoad(oriParent, oriNode, oriItem) {
-                var self = this
+            handleAsyncLoad(targetParent, targetNode) {
+                var self = this;
                 if (this.async) {
-                    this.async(oriNode, (data) => {
+                    this.async(targetNode, (data) => {
                         if (data.length > 0) {
                             for (let i in data) {
                                 if (!data[i].isLeaf) {
@@ -319,22 +322,22 @@
                                         data[i][self.childrenFieldName] = [self.initializeLoading()]
                                     }
                                 }
-                                var dataItem = self.initializeDataItem(data[i])
-                                self.$set(oriParent, i, dataItem)
+                                var node = self.initializeNode(data[i])
+                                self.$set(targetParent, i, node)
                             }
                         } else {
-                            oriNode.model[self.childrenFieldName] = []
+                            targetNode.model[self.childrenFieldName] = []
                         }
-                        if(oriNode.model){
-                            oriNode.model.loading = false;
+                        if(targetNode.model){
+                            targetNode.model.loading = false;
                         }
                     })
 
                 }
             },
-            onItemDragStart(e, oriNode, oriItem) {
+            onItemDragStart(e, targetNode) {
 
-                if (!this.allowedToDrag(oriItem)) {
+                if (!this.allowedToDrag(targetNode)) {
 
                     // The dragged item isn't draggable
                     this.currentIsDraggable = false;
@@ -355,104 +358,106 @@
                 if(this.multiTree){
 
                     this.draggedItem = {
-                        item: oriItem,
-                        parentItem: oriNode.parentItem,
-                        index: oriNode.parentItem.findIndex(t => t.id === oriItem.id)
+                        item: targetNode.model,
+                        parentItem: targetNode.parentItem,
+                        index: targetNode.parentItem.findIndex(t => t.id === targetNode.model.id)
+                        // todo store Tree here?
                     }
+
                 }else{
 
                     e.dataTransfer.effectAllowed = "move"
                     e.dataTransfer.setData('text', "")
                     this.draggedElm = e.target
                     this.draggedItem = {
-                        item: oriItem,
-                        parentItem: oriNode.parentItem,
-                        index: oriNode.parentItem.findIndex(t => t.id === oriItem.id)
+                        item: targetNode.model,
+                        parentItem: targetNode.parentItem,
+                        index: targetNode.parentItem.findIndex(t => t.id === targetNode.model.id)
                     }
 
                 }
-                this.$emit("item-drag-start", oriNode, oriItem,this.draggedItem, e)
+                this.$emit("item-drag-start", targetNode, targetNode.model,this.draggedItem, e)
 
             },
-            onItemDragEnd(e, oriNode, oriItem) {
+            onItemDragEnd(e, targetNode) {
                 this.draggedItem = undefined
                 this.draggedElm = undefined
                 this.currentIsDraggable = true;
-                this.$emit("item-drag-end", oriNode, oriItem, e)
+                this.$emit("item-drag-end", targetNode, targetNode.model, e)
             },
-            allowedToDrop (oriItem, position) {
+            allowedToDrop (targetNode, position) {
 
                 if (!this.draggable || !this.draggedItem) {
                     return false
                 }
-                if (position === '2' && oriItem.dropDisabled === true) {
+                if (position === '2' && targetNode.model.dropDisabled === true) {
                     return false
                 }
 
-                if (this.draggedItem.parentItem === oriItem.children ||
-                    this.draggedItem.item === oriItem ||
-                    (this.draggedItem.item.children && this.draggedItem.item.children.indexOf(oriItem) !== -1)) {
+                if (this.draggedItem.parentItem === targetNode.model.children ||
+                    this.draggedItem.item === targetNode.model ||
+                    (this.draggedItem.item.children && this.draggedItem.item.children.indexOf(targetNode.model) !== -1)) {
                     return false
                 }
 
                 return true
             },
-            allowedToDrag(oriItem) {
-                return this.draggable && !oriItem.dragDisabled;
+            allowedToDrag(targetNode) {
+                return this.draggable && !targetNode.model.dragDisabled;
             },
-            onItemDrop(e, oriNode, oriItem, position) {
+            onItemDrop(e, targetNode, position) {
 
                 if (!this.draggable)
                     return false
 
-                this.$emit("item-drop-before", oriNode, oriItem, !this.draggedItem ? undefined : this.draggedItem.item, e)
+                this.$emit("item-drop-before", targetNode, targetNode.model, !this.draggedItem ? undefined : this.draggedItem.item, e)
 
                 if(this.multiTree && !this.allowMultiTreeAndUsual){
                     //for multiTree case - emit drop node, item, and event, emitting even on left/right drop position
-                    this.$emit('item-drop-multi-tree', oriNode, oriItem, e);
+                    this.$emit('item-drop-multi-tree', targetNode, targetNode.model, position, e);
                 }
                 else{
 
-                    if (this.draggedItem && oriItem[this.childrenFieldName] !== this.draggedItem.item[this.childrenFieldName]) {
+                    if (this.draggedItem && targetNode.model[this.childrenFieldName] !== this.draggedItem.item[this.childrenFieldName]) {
 
                         var newParent = ''
                         if (position === '2') {
                             /** Item is droped on the other item (folder) ****/
-                            if (!this.allowedToDrop(oriItem, position)) return
+                            if (!this.allowedToDrop(targetNode.model, position)) return
 
                             if(this.executeSiblingMovement){
-                                this.draggedItem.item.moveTo(this.draggedItem, oriItem);
+                                this.draggedItem.item.moveTo(this.draggedItem, targetNode.model);
                             }
 
-                            this.$emit('item-drop', oriNode, oriItem, this.draggedItem, e)
+                            this.$emit('item-drop', targetNode, targetNode.model, this.draggedItem, e)
 
                         }
-                        else if (oriNode.parentItem) {
+                        else if (targetNode.parentItem) {
                             /** Item is droped before or under existing item ****/
 ;
-                            if (oriNode.parentId) newParent = oriNode.parentId;
+                            if (targetNode.parentId) newParent = targetNode.parentId;
 
                             // Find position of destination item in the parent group
-                            var oriIndex = oriNode.parentItem.findIndex(node => node.id === oriItem.id);
+                            var oriIndex = targetNode.parentItem.findIndex(node => node.id === targetNode.model.id);
 
                             var anchor_modificator = '';
                             if (position === '1') {
                                 //before anchor node
                                 if(this.executeSiblingMovement){
-                                    this.draggedItem.item.moveLeftTo(this.draggedItem, oriNode, oriIndex)
+                                    this.draggedItem.item.moveLeftTo(this.draggedItem, targetNode, oriIndex)
                                 }
                                 anchor_modificator = "-left";
                             }
                             else if (position === '3') {
                                 //after anchor node
                                 if(this.executeSiblingMovement) {
-                                    this.draggedItem.item.moveRightTo(this.draggedItem, oriNode, oriIndex);
+                                    this.draggedItem.item.moveRightTo(this.draggedItem, targetNode, oriIndex);
                                 }
                                 anchor_modificator = "-right";
 
                             }
 
-                            this.$emit('item-drop-sibling'+anchor_modificator, oriNode, oriItem, this.draggedItem, oriIndex,e)
+                            this.$emit('item-drop-sibling'+anchor_modificator, targetNode, targetNode.model, this.draggedItem, oriIndex,e)
 
                         }
 
@@ -463,7 +468,7 @@
             }
         },
         created() {
-            this.initializeData(this.data)
+            this.initializeNodes(this.data)
         },
         mounted() {
             if (this.async) {

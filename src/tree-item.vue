@@ -123,7 +123,6 @@
 
           isHover(newValue){
 
-          //    console.log('isHover:',newValue);
               if(newValue){
                   // if current dragged item is not set, we're dealing with an item that cant be dragged, so dont show background on targets
                   if(this.currentIsDraggable) {
@@ -158,7 +157,7 @@
           },
           'model.opened': {
               handler: function (val, oldVal) {
-                  this.onItemToggle(this, this.model)
+                  this.onItemToggle(this)
                   this.handleGroupMaxHeight()
               },
               deep: true
@@ -273,7 +272,7 @@
           handleItemClick (e) {
               if (this.model.disabled) return;
               this.model.selected = !this.model.selected;
-              this.onItemClick(this, this.model, e)
+              this.onItemClick(this, e)
           },
           handleItemMouseOver () {
               this.isHover = true
@@ -281,9 +280,9 @@
           handleItemMouseOut () {
               this.isHover = false
           },
-          handleItemDrop (e, oriNode, oriItem) {
+          handleItemDrop (e, targetNode) {
               this.$el.style.backgroundColor = "inherit";
-              this.onItemDrop(e, oriNode, oriItem, this.dropPosition);
+              this.onItemDrop(e, targetNode, this.dropPosition);
               this.dropPosition = '0';
               this.dropCss = '';
           },
@@ -325,13 +324,13 @@
                   }
               }
           },
-          onItemDragOver (e, oriNode, oriItem) {
+          onItemDragOver (e, targetNode) {
 
                 this.isDragEnter = true;
 
-                //if (!oriItem.edited) {
-                const oriPoz = oriNode.$el.getBoundingClientRect();
-                const position = this.getDropPosition(e.clientY, oriPoz.top, 24).toString();
+                //if (!targetNode.model.edited) {
+                const targetPosition = targetNode.$el.getBoundingClientRect();
+                const position = this.getDropPosition(e.clientY, targetPosition.top, 24).toString();
 
                 // only run when we actually change position (this.dropPosition is previous):
                 if (this.dropPosition !== position) {
@@ -344,23 +343,23 @@
                         dropCss = 'tree-marker-' + position
                     }
 
-                    if (!this.allowedToDrop(oriItem, position)) {
+                    if (!this.allowedToDrop(targetNode, position)) {
 
                         if(this.currentIsDraggable) {
 
                             if(position === DropPosition.inside) {
                                 // set background color to red to indicate that dropping here is not allowed
-                                oriNode.$el.style.backgroundColor = '#ff928d';
+                                targetNode.$el.style.backgroundColor = '#ff928d';
 
                                 // hide the green arrow marker/pointer when trying to drop into it:
                                 // dropCss += ' not-allowed'
                             } else {
-                                oriNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                                targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
                             }
                       }
 
                   } else {
-                      oriNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                      targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
                   }
 
                   if(this.showDropPosition){
