@@ -31,8 +31,8 @@
                 <template slot-scope="_">
                     <slot :vm="_.vm" :model="_.model">
                         <i :class="_.vm.themeIconClasses" role="presentation" v-if="!_.model.loading"></i>
-                        <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
-                        <span v-html="_.model[textFieldName]" v-else></span>
+                        <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @keydown="_.model.editingKeyDown" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
+                        <span class="tree-text" v-html="_.model[textFieldName]" v-else></span>
                     </slot>
                 </template>
             </tree-item>

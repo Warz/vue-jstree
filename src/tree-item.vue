@@ -13,11 +13,11 @@
         <div role="presentation" :class="wholeRowClasses" v-if="isWholeRow">&nbsp;</div>
         <div :class="dropCss"></div>
         <i class="tree-icon tree-ocl" role="presentation" @click="handleItemToggle"></i>
-        <div :class="anchorClasses" @click.exact="handleItemClick" v-on="events">
-            <i class="tree-icon tree-checkbox" role="presentation" v-if="showCheckbox && !model.loading"></i>
+        <div :class="anchorClasses"  v-on="events">
+            <i class="tree-icon tree-checkbox" role="presentation" @click.exact="handleItemClick" v-if="showCheckbox && !model.loading"></i>
             <slot :vm="this" :model="model">
                 <i :class="themeIconClasses" role="presentation" v-if="!model.loading"></i>
-                <span v-html="model[textFieldName]"></span>
+                <span class="tree-text" v-html="model[textFieldName]"></span>
             </slot>
         </div>
         <ul role="group" ref="group" class="tree-children" v-if="isFolder" :style="groupStyle">
@@ -50,8 +50,8 @@
                 <template slot-scope="_">
                     <slot :vm="_.vm" :model="_.model">
                         <i :class="_.vm.themeIconClasses" role="presentation" v-if="!model.loading"></i>
-                        <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
-                        <span v-html="_.model[textFieldName]" v-else></span>
+                        <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @keydown="_.model.editingKeyDown" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
+                        <span class="tree-text" v-html="_.model[textFieldName]" v-else></span>
                     </slot>
                 </template>
             </tree-item>
@@ -290,6 +290,9 @@
               this.dropCss = '';
           },
           onItemDoubleClick(event,node) {
+
+              // ensure double click only on the text is allowed
+              if( ! event.target.closest('span.tree-text')) return;
 
               node.model.editing = true;
 

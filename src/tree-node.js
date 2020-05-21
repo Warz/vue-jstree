@@ -39,8 +39,9 @@ export default function TreeNode(tree,item) {
             this[textFieldName] = item[textFieldName] || '';
             this[valueFieldName] = item[valueFieldName] || item[textFieldName];
             this.icon = item.icon || '';
+            this.focused = item.focused || false; // focused/active node
             this.opened = item.opened || collapse;
-            this.selected = item.selected || false;
+            this.selected = item.selected || false; // checked
             this.disabled = item.disabled || false;
             this.loading = item.loading || false;
             this.editing = item.editing || false; // Is user editing the node ? (usually input field for text)
@@ -163,6 +164,14 @@ export default function TreeNode(tree,item) {
                 node.editing = false;
                 tree.$emit('cancel-editing', node)
             }
+        }
+        node.editingKeyDown = function(e) {
+
+                if (e.keyCode == 65 && e.ctrlKey) {
+                    e.target.select()
+                }
+
+
         }
 
         return node
