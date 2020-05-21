@@ -43,6 +43,7 @@ export default function TreeNode(tree,item) {
             this.selected = item.selected || false;
             this.disabled = item.disabled || false;
             this.loading = item.loading || false;
+            this.editing = item.editing || false; // Is user editing the node ? (usually input field for text)
 
             this[childrenFieldName] = tree.initializeNodes(item[childrenFieldName]) || []
         }
@@ -156,6 +157,12 @@ export default function TreeNode(tree,item) {
         node.deleteNode = function (selectedNode) {
             let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
             selectedNode.parentItem.splice(index, 1)
+        }
+        node.cancelEditing = function () {
+            if(node.editing) {
+                node.editing = false;
+                tree.$emit('cancel-editing', node)
+            }
         }
 
         return node

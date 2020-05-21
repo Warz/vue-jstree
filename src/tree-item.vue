@@ -7,7 +7,9 @@
         @dragover.stop.prevent="onItemDragOver($event, _self, _self.model)"
         @dragenter.stop.prevent="onDragState(true)"
         @dragleave.stop.prevent="onDragState(false)"
-        @drop.stop.prevent="handleItemDrop($event, _self, _self.model)">
+        @drop.stop.prevent="handleItemDrop($event, _self, _self.model)"
+        @dblclick.stop.prevent="onItemDoubleClick($event,_self)">
+
         <div role="presentation" :class="wholeRowClasses" v-if="isWholeRow">&nbsp;</div>
         <div :class="dropCss"></div>
         <i class="tree-icon tree-ocl" role="presentation" @click="handleItemToggle"></i>
@@ -48,7 +50,8 @@
                 <template slot-scope="_">
                     <slot :vm="_.vm" :model="_.model">
                         <i :class="_.vm.themeIconClasses" role="presentation" v-if="!model.loading"></i>
-                        <span v-html="_.model[textFieldName]"></span>
+                        <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
+                        <span v-html="_.model[textFieldName]" v-else></span>
                     </slot>
                 </template>
             </tree-item>
@@ -285,6 +288,14 @@
               this.onItemDrop(e, targetNode, this.dropPosition);
               this.dropPosition = '0';
               this.dropCss = '';
+          },
+          onItemDoubleClick(event,node) {
+
+              node.model.editing = true;
+
+              this.$nextTick(() => {
+                  node.$el.querySelector('.tree-anchor').querySelector('input').focus();
+              });
           },
           /**
            * Calculate position based on where user has placed mouse
