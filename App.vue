@@ -421,35 +421,32 @@
                     this.cutNode = this.editingNode;
                     this. copyNode = null
                 } else if (action === 'copy') {
-                    this.copyNode = this.editingNode;
+                    // deepClone object to save current state of the copied node:
+                    this.copyNode = JSON.parse(JSON.stringify(this.editingNode.model));
                 }
             },
             onClickInMenu(txt) {
                 console.log('You clicked: ' + txt);
             },
             /**
-             * Create a clone for the node item and it's children
-             * Will clonse only essential properties (stripping id and methods)
+             * Get rid of the id property from the node and its children
              */
-            cloneNodeItem(node) {
-                let newNode = {
-                    opened: node.opened,
-                    selected: node.selected,
-                    text: node.text,
-                    value: node.value,
-                    disabled: node.disabled,
-                    icon: node.icon,
-                    loading: node.loading,
-                    children: [],
-                };
+            idCleanup(item) {
+                // Clone
+                let newNode = Object.assign({}, item);
+                // It's not a deep clone so children needs to be re-created
+                newNode['children'] = [];
+                // Get rid of the id so we can auto-increment new later
+                delete newNode['id'];
 
-                if(node.children.length) {
-                    node.children.forEach(child => {
-                        newNode.children.push(this.cloneNodeItem(child));
+                if(item.children.length) {
+                    item.children.forEach(child => {
+                        newNode.children.push(this.idCleanup(child));
                     })
                 }
 
                 return newNode;
+
             },
             pasteNode() {
                 if( ! this.activeCutOrCopy) {
@@ -457,10 +454,7 @@
                 }
 
                 if(this.copyNode) {
-
-                    // Get rid of id and methods and create a clone ready for insert
-                    let stripped = this.cloneNodeItem(this.copyNode.model);
-
+                    let stripped = this.idCleanup(this.copyNode);
                     this.editingItem.addChild(stripped);
                 }
 
@@ -484,7 +478,8 @@
                 this.editingItem = node.model
                 console.log(node.model.text + ' clicked !')
             },
-            itemDragStart (node) {
+            itemDragStart (node,item,draggedItem) {
+                this.currentDraggedItem = draggedItem;
                 console.log(node.model.text + ' drag start !')
             },
             itemDragEnd (node) {
@@ -492,12 +487,13 @@
             },
             itemDropBefore (node, item, draggedItem , e) {
                 // If dropping an html element into the tree create a new node
+                /*
                 if(!draggedItem && this.$refs.tree.currentIsDraggable) {
                     item.addToPosition({
                         text: "newNode",
                         value: "newNode"
                     }, node);
-                }
+                }*/
             },
             itemDrop (node, item) {
                 /*
@@ -665,7 +661,7 @@
     .icon-state-success {
         color: green;
     }
-    
+
     .paste-disabled {
         opacity: 0.3;
     }
