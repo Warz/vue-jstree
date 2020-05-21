@@ -2,6 +2,63 @@
     <div id="app" style="padding-bottom: 300px;">
         <img src="./assets/logo.png">
         <h1>{{ msg }}</h1>
+
+<h2>Multi Tree</h2>
+<div>
+
+<div style="width:840px; margin: 0 auto;">
+    <div style="width:49%; display:inline-block; vertical-align: top;">
+        <p style="text-align:left">Search Text <input type="text" @keyup="inputKeyUp" v-model="searchText" /></p>
+        <br>
+        <v-jstree :data="data"
+                  :item-events="itemEvents"
+                  show-checkbox
+                  multiple
+                  allow-batch
+                  whole-row
+                  draggable
+                  expand-timer
+                  :expand-timer-time-out="5000"
+                  execute-sibling-movement
+                  :multi-tree="true"
+                  @item-click="itemClick"
+                  @item-drag-start="itemDragStart"
+                  @item-drag-end="itemDragEnd"
+                  @item-drop-before="itemDropBefore"
+                  @item-drop="itemDrop"
+                  :current-dragged-item="currentDraggedItem"
+                  ref="mtree1"></v-jstree>
+
+
+
+    </div>
+    <div style="width:49%; display:inline-block; vertical-align: top;">
+        <p style="text-align:left">Search Text <input type="text" @keyup="inputKeyUp" v-model="searchText" /></p>
+        <br>
+        <v-jstree :data="datab"
+                  :item-events="itemEvents"
+                  show-checkbox
+                  multiple
+                  allow-batch
+                  whole-row
+                  draggable
+                  expand-timer
+                  :expand-timer-time-out="5000"
+                  execute-sibling-movement
+                  :multi-tree="true"
+                  @item-click="itemClick"
+                  @item-drag-start="itemDragStart"
+                  @item-drag-end="itemDragEnd"
+                  @item-drop-before="itemDropBefore"
+                  @item-drop="itemDrop"
+                  :current-dragged-item="currentDraggedItem"
+                  ref="mtree2"></v-jstree>
+
+
+
+    </div>
+</div>
+</div>
         <h2>Tree View</h2>
         <div>
             <div style="width:840px; margin: 0 auto;">
@@ -208,6 +265,7 @@
         data () {
             var vm = this;
             return {
+                currentDraggedItem : null,
                 msg: 'A Tree Plugin For Vue2',
                 searchText: '',
                 editingItem: {},
@@ -232,6 +290,86 @@
                     }
                 },
                 data: [
+                    {
+                        "text": "Same but with checkboxes",
+                        "children": [
+                            {
+                                "text": "initially selected",
+                                "selected": true
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-danger"
+                            },
+                            {
+                                "text": "initially open",
+                                "icon": "fa fa-folder icon-state-default",
+                                "opened": true,
+                                "children": [
+                                    {
+                                        "text": "Another node"
+                                    }
+                                ]
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-warning"
+                            },
+                            {
+                                "text": "disabled node",
+                                "icon": "fa fa-check icon-state-success",
+                                "disabled": true
+                            }
+                        ]
+                    },
+                    {
+                        "text": "Same but with checkboxes",
+                        "opened": true,
+                        "children": [
+                            {
+                                "text": "initially selected",
+                                "selected": true
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-danger"
+                            },
+                            {
+                                "text": "initially open",
+                                "icon": "fa fa-folder icon-state-default",
+                                "opened": true,
+                                "children": [
+                                    {
+                                        "text": "Another node"
+                                    }
+                                ]
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-warning"
+                            },
+                            {
+                                "text": "disabled node",
+                                "icon": "fa fa-check icon-state-success",
+                                "disabled": true
+                            }
+                        ]
+                    },
+                    {
+                        "text": "And wholerow selection"
+                    },
+                    {
+                        "text": "drag disabled",
+                        "icon": "fa fa-warning icon-state-danger",
+                        "dragDisabled": true
+                    },
+                    {
+                        "text": "drop disabled",
+                        "icon": "fa fa-warning icon-state-danger",
+                        "dropDisabled": true
+                    }
+                ],
+                datab: [
                     {
                         "text": "Same but with checkboxes",
                         "children": [

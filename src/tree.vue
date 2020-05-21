@@ -78,6 +78,7 @@
             showDropPosition:{type: Boolean, default:true},
             multiTree: {type: Boolean, default: false},
             allowMultiTreeAndUsual: {type: Boolean, default: false},
+            currentDraggedItem: { type: Object, default: null }
         },
         data() {
             return {
@@ -234,8 +235,7 @@
                     this.draggedItem = {
                         item: targetNode.model,
                         parentItem: targetNode.parentItem,
-                        index: targetNode.parentItem.findIndex(t => t.id === targetNode.model.id)
-                        // todo store Tree here?
+                        index: targetNode.parentItem.findIndex(t => t.id === targetNode.model.id),
                     }
 
                 }else{
@@ -286,59 +286,53 @@
 
                 this.$emit("item-drop-before", targetNode, targetNode.model, !this.draggedItem ? undefined : this.draggedItem.item, e)
 
-                if(this.multiTree && !this.allowMultiTreeAndUsual){
-                    //for multiTree case - emit drop node, item, and event, emitting even on left/right drop position
-                    this.$emit('item-drop-multi-tree', targetNode, targetNode.model, position, e);
+                if(this.multiTree && !this.allowMultiTreeAndUsual) {
+                    this.draggedItem = this.currentDraggedItem;
+                    //this.$emit('item-drop-multi-tree', targetNode, targetNode.model, position, e);
                 }
-                else{
 
-                    if (this.draggedItem && targetNode.model[this.childrenFieldName] !== this.draggedItem.item[this.childrenFieldName]) {
+                if (this.draggedItem && targetNode.model[this.childrenFieldName] !== this.draggedItem.item[this.childrenFieldName]) {
 
-                        var newParent = ''
-                        if (position === '2') {
-                            /** Item is droped on the other item (folder) ****/
-                            if (!this.allowedToDrop(targetNode, position)) return
+                    var newParent = ''
+                    if (position === '2') {
+                        /** Item is droped on the other item (folder) ****/
+                        if (!this.allowedToDrop(targetNode, position)) return
 
-                            if(this.executeSiblingMovement){
-                                this.draggedItem.item.moveTo(this.draggedItem, targetNode.model);
-                            }
-
-                            this.$emit('item-drop', targetNode, targetNode.model, this.draggedItem, e)
-
+                        if(this.executeSiblingMovement){
+                            this.draggedItem.item.moveTo(this.draggedItem, targetNode.model);
                         }
-                        else if (targetNode.parentItem) {
-                            /** Item is droped before or under existing item ****/
-;
-                            if (targetNode.parentId) newParent = targetNode.parentId;
 
-                            // Find position of destination item in the parent group
-                            var oriIndex = targetNode.parentItem.findIndex(node => node.id === targetNode.model.id);
-
-                            var anchor_modificator = '';
-                            if (position === '1') {
-                                //before anchor node
-                                if(this.executeSiblingMovement){
-                                    this.draggedItem.item.moveLeftTo(this.draggedItem, targetNode, oriIndex)
-                                }
-                                anchor_modificator = "-left";
-                            }
-                            else if (position === '3') {
-                                //after anchor node
-                                if(this.executeSiblingMovement) {
-                                    this.draggedItem.item.moveRightTo(this.draggedItem, targetNode, oriIndex);
-                                }
-                                anchor_modificator = "-right";
-
-                            }
-
-                            this.$emit('item-drop-sibling'+anchor_modificator, targetNode, targetNode.model, this.draggedItem, oriIndex,e)
-
-                        }
+                        this.$emit('item-drop', targetNode, targetNode.model, this.draggedItem, e)
 
                     }
+                    else if (targetNode.parentItem) {
+                        /** Item is droped before or under existing item ****/
+;
+                        if (targetNode.parentId) newParent = targetNode.parentId;
 
+                        // Find position of destination item in the parent group
+                        var oriIndex = targetNode.parentItem.findIndex(node => node.id === targetNode.model.id);
+
+                        var anchor_modificator = '';
+                        if (position === '1') {
+                            //before anchor node
+                            if(this.executeSiblingMovement){
+                                this.draggedItem.item.moveLeftTo(this.draggedItem, targetNode, oriIndex)
+                            }
+                            anchor_modificator = "-left";
+                        }
+                        else if (position === '3') {
+                            //after anchor node
+                            if(this.executeSiblingMovement) {
+                                this.draggedItem.item.moveRightTo(this.draggedItem, targetNode, oriIndex);
+                            }
+                            anchor_modificator = "-right";
+
+                        }
+
+                        this.$emit('item-drop-sibling'+anchor_modificator, targetNode, targetNode.model, this.draggedItem, oriIndex,e)
+                    }
                 }
-
             }
         },
         created() {
