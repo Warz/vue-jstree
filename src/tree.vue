@@ -39,9 +39,9 @@
     </div>
 </template>
 <script>
-    import TreeItem from './tree-item.vue'
+    import TreeItem from './tree-item.vue' // holds the node vue component
+    import TreeNode from './tree-node' // holds the node data model
 
-    let ITEM_ID = 0
     let ITEM_HEIGHT_SMALL = 18
     let ITEM_HEIGHT_DEFAULT = 24
     let ITEM_HEIGHT_LARGE = 32
@@ -117,7 +117,7 @@
         },
         methods: {
             /**
-             * Initialize nodes takes a json object and return node objects
+             * Initialize nodes takes a json object and sets nodes by reference
              * @param nodes
              */
             initializeNodes(nodes) {
@@ -128,132 +128,7 @@
                 }
             },
             initializeNode(item) {
-                let self = this;
-                function Model(item, textFieldName, valueFieldName, childrenFieldName, collapse) {
-                    this.id = item.id || ITEM_ID++
-                    this[textFieldName] = item[textFieldName] || ''
-                    this[valueFieldName] = item[valueFieldName] || item[textFieldName]
-                    this.icon = item.icon || ''
-                    this.opened = item.opened || collapse
-                    this.selected = item.selected || false
-                    this.disabled = item.disabled || false
-                    this.loading = item.loading || false
-                    this[childrenFieldName] = self.initializeNodes(item[childrenFieldName]) || []
-                }
-
-                let node = Object.assign(new Model(item, this.textFieldName, this.valueFieldName, this.childrenFieldName, this.collapse), item)
-
-                node.addBefore = function (data, selectedNode) {
-                    let newItem = self.initializeNode(data)
-                    let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
-                    selectedNode.parentItem.splice(index, 0, newItem)
-                }
-                node.addAfter = function (data, selectedNode) {
-                    let newItem = self.initializeNode(data)
-                    let index = selectedNode.parentItem.findIndex(t => t.id === node.id) + 1
-                    selectedNode.parentItem.splice(index, 0, newItem)
-                }
-                node.addChild = function (data) {
-                    let newItem = self.initializeNode(data)
-                    node.opened = true
-                    node[self.childrenFieldName].push(newItem)
-                }
-                /**
-                 * Add item to position of the arrow next to selected/hovered node
-                 *
-                 * There are three positions:
-                 * - Above the node
-                 * - Inside the node
-                 * - Below the node
-                 *
-                 * You can optionally specify position to force a specific position
-                 *
-                 * @author Warz
-                 */
-                node.addToPosition = function(data, selectedNode, position) {
-
-                    position = position || selectedNode.dropPosition;
-
-                    switch(position) {
-                        // 1 = putting it above the node
-                        case "1":
-                            node.addBefore(data,selectedNode);
-                            break;
-                        // 2 = putting it into a node
-                        case "2":
-                            node.addChild(data);
-                            break;
-                        // 3 = putting it after the node
-                        default:
-                            node.addAfter(data,selectedNode);
-                    }
-                }
-                node.openChildren = function () {
-                    node.opened = true
-                    self.handleRecursionNodeChildren(node, node => {
-                        node.opened = true
-                    })
-                }
-                node.closeChildren = function () {
-                    node.opened = false
-                    self.handleRecursionNodeChildren(node, node => {
-                        node.opened = false
-                    })
-                }
-                node.moveTo = function(draggedItem, anchorNode){
-
-                    // clone draggedItem
-                    var swapItem = Object.assign({},draggedItem);
-
-                    // remove the dragged item from the parent list of items in preparation of placing it somewhere else
-                    draggedItem.parentItem.splice(draggedItem.index, 1)
-
-                    // add item as child
-                    anchorNode[self.childrenFieldName].push(swapItem.item);
-
-                    anchorNode.opened = true
-
-                }
-                node.moveLeftTo = function(draggedItem, anchorNode, oriIndex){
-
-                    let index = oriIndex;
-                    let isSameParents = draggedItem.parentItem === anchorNode.parentItem;
-                    let isFurtherDown = draggedItem.index < oriIndex;
-
-                    draggedItem.parentItem.splice(draggedItem.index, 1);
-
-                    if(isSameParents && isFurtherDown) {
-                        // The array of items will have it's index changed with -1 if you pull out an item
-                        // higher up. So if we're using the same index to place item as where we grab it from
-                        // we have to adjust for that or we'd end up placing the item 1 position too low.
-                        index--;
-                    }
-
-                    anchorNode.parentItem.splice(index, 0, draggedItem.item);
-                }
-                node.moveRightTo = function(draggedItem, anchorNode, oriIndex){
-
-                    let index = oriIndex + 1; // + 1 to place it below item
-                    let isSameParents = draggedItem.parentItem === anchorNode.parentItem;
-                    let isFurtherDown = draggedItem.index < oriIndex;
-
-                    draggedItem.parentItem.splice(draggedItem.index, 1);
-
-                    if(isSameParents && isFurtherDown) {
-                        // The array of items will have it's index changed with -1 if you pull out an item
-                        // higher up. So if we're using the same index to place item as where we grab it from
-                        // we have to adjust for that or we'd end up placing the item 1 position too low.
-                        index--;
-                    }
-
-                    anchorNode.parentItem.splice(index, 0, draggedItem.item);
-
-                }
-                node.deleteNode = function (selectedNode) {
-                    let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
-                    selectedNode.parentItem.splice(index, 1)
-                }
-                return node
+                return TreeNode(this,item);
             },
             initializeLoading() {
                 var item = {}
@@ -422,7 +297,7 @@
                         var newParent = ''
                         if (position === '2') {
                             /** Item is droped on the other item (folder) ****/
-                            if (!this.allowedToDrop(targetNode.model, position)) return
+                            if (!this.allowedToDrop(targetNode, position)) return
 
                             if(this.executeSiblingMovement){
                                 this.draggedItem.item.moveTo(this.draggedItem, targetNode.model);
