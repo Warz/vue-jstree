@@ -50,12 +50,12 @@ export default function TreeNode(tree,item) {
         }
 
         node.addBefore = function (data, selectedNode) {
-            let newItem = initNode(data)
+            let newItem = initNode(tree,data)
             let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
             selectedNode.parentItem.splice(index, 0, newItem)
         }
         node.addAfter = function (data, selectedNode) {
-            let newItem = initNode(data)
+            let newItem = initNode(tree,data)
             let index = selectedNode.parentItem.findIndex(t => t.id === node.id) + 1
             selectedNode.parentItem.splice(index, 0, newItem)
         }
