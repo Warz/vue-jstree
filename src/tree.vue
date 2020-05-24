@@ -285,7 +285,7 @@
                 if (!this.draggable)
                     return false
 
-                this.$emit("item-drop-before", targetNode, targetNode.model, !this.draggedItem ? undefined : this.draggedItem.item, e)
+                this.$emit("item-drop-before", targetNode, targetNode.model, !this.draggedItem ? undefined : this.draggedItem.item, e, position)
 
                 if(this.multiTree && !this.allowMultiTreeAndUsual) {
                     this.draggedItem = this.currentDraggedItem;
@@ -308,7 +308,7 @@
                     }
                     else if (targetNode.parentItem) {
                         /** Item is droped before or under existing item ****/
-;
+
                         if (targetNode.parentId) newParent = targetNode.parentId;
 
                         // Find position of destination item in the parent group
