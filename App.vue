@@ -20,17 +20,13 @@
                   expand-timer
                   :expand-timer-time-out="5000"
                   execute-sibling-movement
-                  :multi-tree="true"
+                  :multi-tree="multiTree"
                   @item-click="itemClick"
                   @item-drag-start="itemDragStart"
                   @item-drag-end="itemDragEnd"
                   @item-drop-before="itemDropBefore"
                   @item-drop="itemDrop"
-                  :current-dragged-item="currentDraggedItem"
                   ref="mtree1"></v-jstree>
-
-
-
     </div>
     <div style="width:49%; display:inline-block; vertical-align: top;">
         <p style="text-align:left">Search Text <input type="text" @keyup="inputKeyUp" v-model="searchText" /></p>
@@ -45,17 +41,13 @@
                   expand-timer
                   :expand-timer-time-out="5000"
                   execute-sibling-movement
-                  :multi-tree="true"
+                  :multi-tree="multiTree"
                   @item-click="itemClick"
                   @item-drag-start="itemDragStart"
                   @item-drag-end="itemDragEnd"
                   @item-drop-before="itemDropBefore"
                   @item-drop="itemDrop"
-                  :current-dragged-item="currentDraggedItem"
                   ref="mtree2"></v-jstree>
-
-
-
     </div>
 </div>
 </div>
@@ -65,7 +57,9 @@
                 <div style="width:49%; display:inline-block; vertical-align: top;">
                     <p style="text-align:left">Search Text <input type="text" @keyup="inputKeyUp" v-model="searchText" /></p>
                     <br>
-                    <v-jstree :data="data"
+                    <v-jstree :data="data2"
+                              textFieldName="text2"
+                              childrenFieldName="children2"
                               :item-events="itemEvents"
                               show-checkbox
                               multiple
@@ -75,7 +69,8 @@
                               expand-timer
                               :expand-timer-time-out="5000"
                               execute-sibling-movement
-                              :multi-tree="multiTree"
+                              :multi-tree="true"
+                              :multi-tree-state="multiTree2"
                               @item-click="itemClick"
                               @item-drag-start="itemDragStart"
                               @item-drag-end="itemDragEnd"
@@ -87,9 +82,10 @@
                     <span style="float: left; background-color: red; color: #fff; padding: 6px" draggable="true">
             drag me to add new child !
           </span>
+                    <!--
                     <input type="checkbox" id="multiTreeFlag"
                            v-model="multiTree"
-                           value=true>Enable multiTree<br>
+                           value=true>Enable multiTree<br>-->
 
                 </div>
                 <div style="width:50%; display:inline-block;">
@@ -256,16 +252,22 @@
 <script>
 
     import { VueContext } from 'vue-context';
+    import useMultiTree from "./src/useMultiTree";
 
     export default {
         name: 'app',
         components: {
             VueContext
         },
+        setup(props,context) {
+            return {
+                multiTree : useMultiTree(),
+                multiTree2 : useMultiTree(),
+            }
+        },
         data () {
             var vm = this;
             return {
-                currentDraggedItem : null,
                 msg: 'A Tree Plugin For Vue2',
                 searchText: '',
                 editingItem: {},
@@ -361,12 +363,12 @@
                     {
                         "text": "drag disabled",
                         "icon": "fa fa-warning icon-state-danger",
-                        "dragDisabled": true
+                        "draggable": false
                     },
                     {
                         "text": "drop disabled",
                         "icon": "fa fa-warning icon-state-danger",
-                        "dropDisabled": true
+                        "drop": false
                     }
                 ],
                 datab: [
@@ -441,12 +443,12 @@
                     {
                         "text": "drag disabled",
                         "icon": "fa fa-warning icon-state-danger",
-                        "dragDisabled": true
+                        "draggable": false
                     },
                     {
                         "text": "drop disabled",
                         "icon": "fa fa-warning icon-state-danger",
-                        "dropDisabled": true
+                        "drop": false
                     }
                 ],
                 data2: [
@@ -545,7 +547,6 @@
                 ],
                 filesToAdd: 1,
                 filesToAddIndex: 0,
-                multiTree:false
             }
         },
         computed: {
@@ -617,7 +618,6 @@
                 console.log(node.model.text + ' clicked !')
             },
             itemDragStart (node,item,draggedItem) {
-                this.currentDraggedItem = draggedItem;
                 console.log(node.model.text + ' drag start !')
             },
             itemDragEnd (node) {

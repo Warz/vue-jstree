@@ -26,6 +26,7 @@
                        :show-drop-position="showDropPosition"
                        :allowed-to-drop="allowedToDrop"
                        :current-is-draggable="currentIsDraggable"
+                       :is-any-dragging="isAnyDragging"
 
             >
                 <template slot-scope="_">
@@ -43,9 +44,15 @@
     import TreeItem from './tree-item.vue' // holds the node vue component
     import TreeNode from './tree-node' // holds the node data model
 
-    let ITEM_HEIGHT_SMALL = 18
-    let ITEM_HEIGHT_DEFAULT = 24
-    let ITEM_HEIGHT_LARGE = 32
+    let ITEM_HEIGHT_SMALL = 18;
+    let ITEM_HEIGHT_DEFAULT = 24;
+    let ITEM_HEIGHT_LARGE = 32;
+    const DropPosition = {
+        empty: '0',
+        before: '1',
+        inside: '2',
+        after: '3'
+    };
 
     export default {
         name: 'VJstree',
@@ -72,20 +79,18 @@
             draggable: {type: Boolean, default: false},
             dragOverBackgroundColor: {type: String, default: "#C9FDC9"},
             klass: String,
-
             expandTimer:{type: Boolean, default: false},
             expandTimerTimeOut:{type: Number, default: 1500},
             executeSiblingMovement:{type: Boolean, default:false},
             showDropPosition:{type: Boolean, default:true},
-            multiTree: {type: Boolean, default: false},
+            multiTree: {type: [Boolean, Object], default: false},
             allowMultiTreeAndUsual: {type: Boolean, default: false},
-            currentDraggedItem: { type: Object, default: null }
         },
         data() {
             return {
                 draggedItem: undefined,
                 draggedElm: undefined,
-                currentIsDraggable : true,
+                currentIsDraggable : false,
             }
         },
         computed: {
@@ -211,9 +216,16 @@
 
                 }
             },
-            onItemDragStart(e, targetNode) {
+            onItemDragStart(e, draggedNode) {
 
-                if (!this.allowedToDrag(targetNode)) {
+                if(draggedNode && draggedNode.draggable) {
+                    this.currentIsDraggable = true;
+                    if(this.multiTree) {
+                        this.multiTree.setDraggedNode(draggedNode);
+                    }
+                }
+
+                if (!this.draggable || !draggedNode.model.isDraggable()) {
 
                     // The dragged item isn't draggable
                     this.currentIsDraggable = false;
@@ -234,9 +246,9 @@
                 if(this.multiTree){
 
                     this.draggedItem = {
-                        item: targetNode.model,
-                        parentItem: targetNode.parentItem,
-                        index: targetNode.parentItem.findIndex(t => t.id === targetNode.model.id),
+                        item: draggedNode.model,
+                        parentItem: draggedNode.parentItem,
+                        index: draggedNode.parentItem.findIndex(t => t.id === draggedNode.model.id),
                     }
 
                 }else{
@@ -245,60 +257,80 @@
                     e.dataTransfer.setData('text', "")
                     this.draggedElm = e.target
                     this.draggedItem = {
-                        item: targetNode.model,
-                        parentItem: targetNode.parentItem,
-                        index: targetNode.parentItem.findIndex(t => t.id === targetNode.model.id)
+                        item: draggedNode.model,
+                        parentItem: draggedNode.parentItem,
+                        index: draggedNode.parentItem.findIndex(t => t.id === draggedNode.model.id)
                     }
 
                 }
-                this.$emit("item-drag-start", targetNode, targetNode.model,this.draggedItem, e)
 
+                if(this.multiTree) {
+                    this.multiTree.setDraggedNode(this.draggedItem); // todo: is this a node tho?
+                }
+
+                this.$emit("item-drag-start", draggedNode, draggedNode.model,this.draggedItem, e)
+
+            },
+            /**
+             * Is local tree or one of the other trees in the group in drag state?
+             * @return {Boolean}
+             */
+            isAnyDragging() {
+              return this.currentIsDraggable || (this.multiTree && this.multiTree.isDragging());
             },
             onItemDragEnd(e, targetNode) {
-                this.draggedItem = undefined
-                this.draggedElm = undefined
-                this.currentIsDraggable = true;
+                this.draggedItem = undefined;
+                this.draggedElm = undefined;
+                this.currentIsDraggable = false;
+
+                if(this.multiTree) {
+                    this.multiTree.setDraggedNode(null);
+                }
                 this.$emit("item-drag-end", targetNode, targetNode.model, e)
             },
-            allowedToDrop (targetNode, position) {
+            allowedToDrop (targetNode, position) { // todo, move this into tree-node.js module?
 
-                if (!this.draggable || !this.draggedItem) {
-                    return false
-                }
-                if (position === '2' && targetNode.model.dropDisabled === true) {
-                    return false
-                }
+                // if tree is not draggable or the draggeditem does not exist we cant drop
+                if (!this.draggable || !this.draggedItem) return false;
 
-                if (this.draggedItem.parentItem === targetNode.model.children ||
-                    this.draggedItem.item === targetNode.model ||
-                    (this.draggedItem.item.children && this.draggedItem.item.children.indexOf(targetNode.model) !== -1)) {
-                    return false
-                }
+                // If dropping into target it must allow drops:
+                if (position === DropPosition.inside && ! targetNode.model.isDrop()) return false;
+
+                // Cannot drag node on itself or any of it's children
+                if(this.draggedItem.item.isOrContains(targetNode)) return false;
 
                 return true
-            },
-            allowedToDrag(targetNode) {
-                return this.draggable && !targetNode.model.dragDisabled;
             },
             onItemDrop(e, targetNode, position) {
 
                 if (!this.draggable)
-                    return false
+                    return false;
+
+                // i todo: we should allow any html tag with attribute draggable="true" to be dragged
+                if(!this.isAnyDragging()) {
+                    return false;
+                }
 
                 this.$emit("item-drop-before", targetNode, targetNode.model, !this.draggedItem ? undefined : this.draggedItem.item, e, position)
 
                 if(this.multiTree && !this.allowMultiTreeAndUsual) {
-                    this.draggedItem = this.currentDraggedItem;
-                    //this.$emit('item-drop-multi-tree', targetNode, targetNode.model, position, e);
+
+                    if( ! this.multiTree.isDragging()) {
+                        return false;
+                    }
+
+                    this.draggedItem = this.multiTree.state.currentDraggedNode;
+
                 }
 
                 if (this.draggedItem && targetNode.model[this.childrenFieldName] !== this.draggedItem.item[this.childrenFieldName]) {
 
-                    var newParent = ''
-                    if (position === '2') {
-                        /** Item is droped on the other item (folder) ****/
-                        if (!this.allowedToDrop(targetNode, position)) return
+                    var newParent = '';
 
+                    if (!this.allowedToDrop(targetNode, position)) return false;
+
+                    if (position === DropPosition.inside) {
+                        /** Item is droped on the other item (folder) ****/
                         if(this.executeSiblingMovement){
                             this.draggedItem.item.moveTo(this.draggedItem, targetNode.model);
                         }
@@ -315,20 +347,17 @@
                         var oriIndex = targetNode.parentItem.findIndex(node => node.id === targetNode.model.id);
 
                         var anchor_modificator = '';
-                        if (position === '1') {
-                            //before anchor node
+                        if (position === DropPosition.before) { //before anchor node
                             if(this.executeSiblingMovement){
                                 this.draggedItem.item.moveLeftTo(this.draggedItem, targetNode, oriIndex)
                             }
                             anchor_modificator = "-left";
                         }
-                        else if (position === '3') {
-                            //after anchor node
+                        else if (position === DropPosition.after) { //after anchor node
                             if(this.executeSiblingMovement) {
                                 this.draggedItem.item.moveRightTo(this.draggedItem, targetNode, oriIndex);
                             }
                             anchor_modificator = "-right";
-
                         }
 
                         this.$emit('item-drop-sibling'+anchor_modificator, targetNode, targetNode.model, this.draggedItem, oriIndex,e)
@@ -341,7 +370,7 @@
         },
         mounted() {
             if (this.async) {
-                this.$set(this.data, 0, this.initializeLoading())
+                this.$set(this.data, 0, this.initializeLoading());
                 this.handleAsyncLoad(this.data, this)
             }
         },

@@ -45,7 +45,7 @@
                        :expand-timer-time-out="expandTimerTimeOut"
                        :show-drop-position="showDropPosition"
                        :allowed-to-drop="allowedToDrop"
-                       :current-is-draggable="currentIsDraggable"
+                       :is-any-dragging="isAnyDragging"
             >
                 <template slot-scope="_">
                     <slot :vm="_.vm" :model="_.model">
@@ -108,7 +108,9 @@
           expandTimer:{type: Boolean, default: false},
           expandTimerTimeOut:{type: Number, default: 1500},
           showDropPosition:{type: Boolean, default: true},
-          currentIsDraggable: { type: Boolean }
+          isAnyDragging: {
+              type: Function, default: () => false
+          },
       },
       data () {
           return {
@@ -128,7 +130,7 @@
 
               if(newValue){
                   // if current dragged item is not set, we're dealing with an item that cant be dragged, so dont show background on targets
-                  if(this.currentIsDraggable) {
+                  if(this.isAnyDragging()) {
                       this.$el.style.backgroundColor = this.dragOverBackgroundColor;
                   }
               }else{
@@ -140,7 +142,7 @@
 
               if(newValue){
                   // if current dragged item is not set, we're dealing with an item that cant be dragged, so dont show background on targets
-                  if(this.currentIsDraggable) {
+                  if(this.isAnyDragging()) {
                       this.$el.style.backgroundColor = this.dragOverBackgroundColor;
                   }
               }else{
@@ -178,7 +180,7 @@
                   {'tree-leaf': !this.isFolder},
                   {'tree-loading': !!this.model.loading},
                   {'tree-drag-enter': this.isDragEnter},
-                  {'tree-drag-disabled': this.model.dragDisabled},
+                  {'tree-drag-disabled': !this.model.isDraggable()},
                   {[this.klass]: !!this.klass}
               ]
           },
@@ -240,7 +242,19 @@
               this.dropCss = '';
               this.onItemDragEnd(e, _self, model)
           },
-          onDragState (entered) {
+          /**
+           * Reset css on drag enter/leave.
+           *
+           * This method will set isDragEnter to true on enter, but it only lasts for microseconds before switching
+           * back to false (practically instant). It will execute at the exact moment you switch between two
+           * draggable items. That's enough to reset the css.
+           *
+           * If you hover outside of the tree (most easy noticable near the top or bottom) you can trick it to stay in
+           * the "true" state since no dragleave event is fired.
+           */
+          onDragState (entered,item) {
+
+              // todo: debounce here?
 
               if (entered) {
                   this.isDragEnter = true;
@@ -290,7 +304,6 @@
               this.dropCss = '';
           },
           onItemDoubleClick(event,node) {
-
               // ensure double click only on the text is allowed
               if( ! event.target.closest('span.tree-text')) return;
 
@@ -316,7 +329,7 @@
               let canDrop = true;
 
               if(checkDropPermission) {
-                  canDrop = !this.model.dropDisabled;
+                  canDrop = this.model.isDrop();
               }
 
               if (canDrop) {
@@ -352,14 +365,14 @@
 
                     var dropCss ='';
 
-                    // If we're not allowed to drag the item we're currently dragging then just hide the market completely
-                    if(this.currentIsDraggable) {
-                        dropCss = 'tree-marker-' + position
-                    }
+                    if(this.isAnyDragging()) {
+                        // If we're not allowed to drag the item we're currently dragging then just hide the marker completely
+                        if(this.isAnyDragging()) {
+                            dropCss = 'tree-marker-' + position
+                        }
 
-                    if (!this.allowedToDrop(targetNode, position)) {
 
-                        if(this.currentIsDraggable) {
+                        if (!this.allowedToDrop(targetNode, position)) {
 
                             if(position === DropPosition.inside) {
                                 // set background color to red to indicate that dropping here is not allowed
@@ -370,15 +383,17 @@
                             } else {
                                 targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
                             }
-                      }
 
-                  } else {
-                      targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
-                  }
 
-                  if(this.showDropPosition){
-                      this.dropCss = dropCss;
-                  }
+                        } else {
+                        targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                        }
+
+
+                        if(this.showDropPosition){
+                        this.dropCss = dropCss;
+                        }
+                    }
               }
           },
       },

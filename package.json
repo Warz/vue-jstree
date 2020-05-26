@@ -19,6 +19,7 @@
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
+    "@vue/composition-api": "^0.5.0",
     "vue-context": "^5.1.0",
     "vue-timers": "^1.10.0"
   },

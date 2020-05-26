@@ -43,6 +43,9 @@ export default function TreeNode(tree,item) {
             this.opened = item.opened || collapse;
             this.selected = item.selected || false; // checked
             this.disabled = item.disabled || false;
+            this.draggable = item.draggable || true; // the old !dragDisabled
+            this.drop = item.drop || true; // the old !dropDisabled
+
             this.loading = item.loading || false;
             this.editing = item.editing || false; // Is user editing the node ? (usually input field for text)
 
@@ -172,6 +175,39 @@ export default function TreeNode(tree,item) {
                 }
 
 
+        }
+
+        /**
+         * Check if node is in children (recursive) (or if matching self)
+         * @param targetNode
+         * @param draggedNode
+         * @returns {boolean}
+         */
+        node.isOrContains = function(targetNode,draggedNode) {
+            draggedNode = draggedNode || node;
+            if(draggedNode.children) {
+                for(let child of draggedNode.children) {
+                    if(child.isOrContains(targetNode,child)) {
+                        return true;
+                    }
+                }
+            }
+            return draggedNode.id === targetNode.model.id;
+        }
+        /**
+         * Is drop (target)
+         * @returns {boolean} true if you are allowed to drop other nodes into this node
+         */
+        node.isDrop = function() {
+            return node.drop;
+        }
+
+        /**
+         * Is draggable
+         * @returns {boolean} true if you are allowed to drag this node
+         */
+        node.isDraggable = function() {
+            return node.draggable;
         }
 
         return node
