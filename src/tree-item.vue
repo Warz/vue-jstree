@@ -127,26 +127,18 @@
       watch: {
 
           isHover(newValue){
-
-              if(newValue){
-                  // if current dragged item is not set, we're dealing with an item that cant be dragged, so dont show background on targets
-                  if(this.isAnyDragging()) {
-                      this.$el.style.backgroundColor = this.dragOverBackgroundColor;
-                  }
-              }else{
-                  //this.$el.style.backgroundColor = "inherit"
-                  this.$el.style.backgroundColor = '';
-              }
+              // Uncomment if you want green colored focus instead of gray
+              //
+              //if(newValue){
+              //      this.$el.style.backgroundColor = this.dragOverBackgroundColor;
+              //} else {
+              //      this.$el.style.backgroundColor = '';
+              //}
+              //
+              //
           },
           isDragEnter(newValue){
-
-              if(newValue){
-                  // if current dragged item is not set, we're dealing with an item that cant be dragged, so dont show background on targets
-                  if(this.isAnyDragging()) {
-                      this.$el.style.backgroundColor = this.dragOverBackgroundColor;
-                  }
-              }else{
-                  //this.$el.style.backgroundColor = "inherit"
+              if(!newValue){
                   this.$el.style.backgroundColor = '';
               }
           },
@@ -371,27 +363,19 @@
                             dropCss = 'tree-marker-' + position
                         }
 
-
                         if (!this.allowedToDrop(targetNode, position)) {
 
-                            if(position === DropPosition.inside) {
                                 // set background color to red to indicate that dropping here is not allowed
                                 targetNode.$el.style.backgroundColor = '#ff928d';
 
                                 // hide the green arrow marker/pointer when trying to drop into it:
                                 // dropCss += ' not-allowed'
-                            } else {
-                                targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
-                            }
-
-
                         } else {
-                        targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
+                            targetNode.$el.style.backgroundColor = this.dragOverBackgroundColor;
                         }
 
-
                         if(this.showDropPosition){
-                        this.dropCss = dropCss;
+                            this.dropCss = dropCss;
                         }
                     }
               }

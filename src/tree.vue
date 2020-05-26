@@ -278,6 +278,13 @@
             isAnyDragging() {
               return this.currentIsDraggable || (this.multiTree && this.multiTree.isDragging());
             },
+            /**
+             * Is this a drag operation between two trees?
+             * @return {boolean} true if multitree operation between two different trees
+             */
+            isDraggingBetweenTrees() {
+                return this.multiTree && this.draggedItem !== this.multiTree.state.currentDraggedNode;
+            },
             onItemDragEnd(e, targetNode) {
                 this.draggedItem = undefined;
                 this.draggedElm = undefined;
@@ -291,13 +298,15 @@
             allowedToDrop (targetNode, position) { // todo, move this into tree-node.js module?
 
                 // if tree is not draggable or the draggeditem does not exist we cant drop
-                if (!this.draggable || !this.draggedItem) return false;
+                if ( ! this.draggable || !this.isAnyDragging()) return false;
 
                 // If dropping into target it must allow drops:
                 if (position === DropPosition.inside && ! targetNode.model.isDrop()) return false;
 
-                // Cannot drag node on itself or any of it's children
-                if(this.draggedItem.item.isOrContains(targetNode)) return false;
+                if( ! this.isDraggingBetweenTrees()) {
+                    // Make sure you don't drag node on itself or any of it's children
+                    if(this.draggedItem.item.isOrContains(targetNode)) return false;
+                }
 
                 return true
             },
