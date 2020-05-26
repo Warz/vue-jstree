@@ -572,51 +572,6 @@
             onClickInMenu(txt) {
                 console.log('You clicked: ' + txt);
             },
-            /**
-             * Get rid of the id property from the node and its children
-             */
-            idCleanup(item) {
-                // Clone
-                let newNode = Object.assign({}, item);
-                // It's not a deep clone so children needs to be re-created
-                newNode['children'] = [];
-                // Get rid of the id so we can auto-increment new later
-                delete newNode['id'];
-
-                if(item.children.length) {
-                    item.children.forEach(child => {
-                        newNode.children.push(this.idCleanup(child));
-                    })
-                }
-
-                return newNode;
-
-            },
-            pasteNode() {
-                if( ! this.activeCutOrCopy) {
-                    return;
-                }
-
-                if(this.copyNode) {
-                    let stripped = this.idCleanup(this.copyNode);
-                    this.editingItem.addChild(stripped);
-                }
-
-                if(this.cutNode) {
-                    // clone it
-                    let node = Object.assign({},this.cutNode);
-
-                    if( this.editingItem === node.model) {
-                        return;
-                    }
-
-                    // todo: replace with moveTo (?)
-                    this.editingItem.addChild(node.model);
-                    this.cutNode.model.deleteNode(this.cutNode);
-                }
-
-                this.cutNode = null;
-            },
             itemClick (node) {
                 this.tree.setEditingNode(node);
                 console.log(node.model.text + ' clicked !')
