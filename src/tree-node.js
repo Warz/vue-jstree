@@ -185,11 +185,10 @@ export default function TreeNode(tree,item) {
          */
         node.isOrContains = function(targetNode,draggedNode) {
             draggedNode = draggedNode || node;
-            if(draggedNode.children) {
-                for(let child of draggedNode.children) {
-                    if(child.isOrContains(targetNode,child)) {
-                        return true;
-                    }
+
+            for(let child of draggedNode[tree.childrenFieldName]) {
+                if(child.isOrContains(targetNode,child)) {
+                    return true;
                 }
             }
             return draggedNode.id === targetNode.model.id;

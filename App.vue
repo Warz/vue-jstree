@@ -69,8 +69,7 @@
                               expand-timer
                               :expand-timer-time-out="5000"
                               execute-sibling-movement
-                              :multi-tree="true"
-                              :multi-tree-state="multiTree2"
+                              :multi-tree="false"
                               @item-click="itemClick"
                               @item-drag-start="itemDragStart"
                               @item-drag-end="itemDragEnd"
@@ -90,7 +89,7 @@
                 </div>
                 <div style="width:50%; display:inline-block;">
         <textarea  style="height:300px; width:100%;">
-          {{data}}
+          {{data2}}
         </textarea>
                 </div>
             </div>
