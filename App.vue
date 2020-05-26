@@ -149,12 +149,12 @@
                     </tr>
                     <tr>
                         <td colspan="2">
-                            <button @click="addChildNode">add child node</button>
-                            <button @click="removeNode">remove this node</button>
-                            <button @click="addBeforeNode">add child before node</button>
-                            <button @click="addAfterNode">add child after node</button>
-                            <button @click="openChildren">open child node</button>
-                            <button @click="closeChildren">close child node</button>
+                            <button @click="tree.action.addChildNode">add child node</button>
+                            <button @click="tree.action.removeNode">remove this node</button>
+                            <button @click="tree.action.addBeforeNode">add child before node</button>
+                            <button @click="tree.action.addAfterNode">add child after node</button>
+                            <button @click="tree.action.openChildren">open child node</button>
+                            <button @click="tree.action.closeChildren">close child node</button>
                         </td>
                     </tr>
                 </table>
@@ -239,11 +239,11 @@
             </div>
         </div>
         <vue-context ref="menu">
-            <li><a href="" @click.prevent="addChildNode">New</a></li>
-            <li><a href="" @click.prevent="setAction('cut')">Cut</a></li>
-            <li><a href="" @click.prevent="setAction('copy')">Copy</a></li>
-            <li><a href="" @click.prevent="pasteNode" :class="{'paste-disabled' : !activeCutOrCopy}">Paste</a></li>
-            <li><a href="" @click.prevent="removeNode">Delete</a></li>
+            <li><a href="" @click.prevent="tree.action.new">New</a></li>
+            <li><a href="" @click.prevent="tree.action.cut">Cut</a></li>
+            <li><a href="" @click.prevent="tree.action.copy">Copy</a></li>
+            <li><a href="" @click.prevent="tree.action.paste" :class="{'paste-disabled' : !tree.pendingPaste}">Paste</a></li>
+            <li><a href="" @click.prevent="tree.action.remove">Delete</a></li>
         </vue-context>
     </div>
 </template>
@@ -252,16 +252,32 @@
 
     import { VueContext } from 'vue-context';
     import useMultiTree from "./src/useMultiTree";
-
+    import useTreeActions from "./src/useTreeActions";
+    import {ref} from "@vue/composition-api";
     export default {
         name: 'app',
         components: {
             VueContext
         },
         setup(props,context) {
+
+            const editingNode = ref(null);
+
+            const { action, pendingPaste } = useTreeActions(editingNode);
+
+            function setEditingNode(value) {
+                editingNode.value = value
+            }
+
             return {
                 multiTree : useMultiTree(),
                 multiTree2 : useMultiTree(),
+                "tree" : {
+                    editingNode,
+                    pendingPaste,
+                    action,
+                    setEditingNode
+                }
             }
         },
         data () {
@@ -270,7 +286,7 @@
                 msg: 'A Tree Plugin For Vue2',
                 searchText: '',
                 editingItem: {},
-                editingNode: null,
+
                 cutNode : null,
                 copyNode : null,
                 itemEvents: {
@@ -283,8 +299,7 @@
                         console.log('contextmenu')
 
                         // Mark active node
-                        vm.editingNode = node;
-                        vm.editingItem = node.model;
+                        vm.tree.setEditingNode(node);
 
                         // Open the menu
                         vm.$refs.menu.open(event,model);
@@ -554,15 +569,6 @@
             }
         },
         methods: {
-            setAction(action) {
-                if(action === 'cut') {
-                    this.cutNode = this.editingNode;
-                    this. copyNode = null
-                } else if (action === 'copy') {
-                    // deepClone object to save current state of the copied node:
-                    this.copyNode = JSON.parse(JSON.stringify(this.editingNode.model));
-                }
-            },
             onClickInMenu(txt) {
                 console.log('You clicked: ' + txt);
             },
@@ -612,8 +618,7 @@
                 this.cutNode = null;
             },
             itemClick (node) {
-                this.editingNode = node
-                this.editingItem = node.model
+                this.tree.setEditingNode(node);
                 console.log(node.model.text + ' clicked !')
             },
             itemDragStart (node,item,draggedItem) {
@@ -670,43 +675,6 @@
                         node.$el.querySelector('.tree-anchor').style.color = '#000'
                     }
                 })
-            },
-            addChildNode: function () {
-                if (this.editingItem.id !== undefined) {
-                    this.editingItem.addChild({
-                        text: "newNode"
-                    })
-                }
-            },
-            removeNode: function (item) {
-                if (this.editingItem.id !== undefined) {
-                    var index = this.editingNode.parentItem.indexOf(this.editingItem)
-                    this.editingNode.parentItem.splice(index, 1)
-                }
-            },
-            addBeforeNode: function () {
-                if (this.editingItem.id !== undefined) {
-                    this.editingItem.addBefore({
-                        text: this.editingItem.text + " before"
-                    }, this.editingNode)
-                }
-            },
-            addAfterNode: function () {
-                if (this.editingItem.id !== undefined) {
-                    this.editingItem.addAfter({
-                        text: this.editingItem.text + " after"
-                    }, this.editingNode)
-                }
-            },
-            openChildren: function () {
-                if (this.editingItem.id !== undefined) {
-                    this.editingItem.openChildren()
-                }
-            },
-            closeChildren: function () {
-                if (this.editingItem.id !== undefined) {
-                    this.editingItem.closeChildren()
-                }
             },
             refreshNode: function () {
                 this.asyncData = [
