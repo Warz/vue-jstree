@@ -22,6 +22,7 @@
                   execute-sibling-movement
                   :multi-tree="multiTree"
                   @item-click="itemClick"
+                  @item-checked="itemChecked"
                   @item-drag-start="itemDragStart"
                   @item-drag-end="itemDragEnd"
                   @item-drop-before="itemDropBefore"
@@ -43,6 +44,7 @@
                   execute-sibling-movement
                   :multi-tree="multiTree"
                   @item-click="itemClick"
+                  @item-checked="itemChecked"
                   @item-drag-start="itemDragStart"
                   @item-drag-end="itemDragEnd"
                   @item-drop-before="itemDropBefore"
@@ -71,6 +73,7 @@
                               execute-sibling-movement
                               :multi-tree="false"
                               @item-click="itemClick"
+                              @item-checked="itemChecked"
                               @item-drag-start="itemDragStart"
                               @item-drag-end="itemDragEnd"
                               @item-drop-before="itemDropBefore"
@@ -185,7 +188,7 @@
         <div>
             <div style="width:840px; margin: 0 auto;">
                 <div style="width:49%; display:inline-block; vertical-align: top;">
-                    <v-jstree :data="data"
+                    <v-jstree :data="datax"
                               :item-events="itemEvents"
                               show-checkbox
                               multiple
@@ -193,6 +196,7 @@
                               whole-row
                               draggable
                               @item-click="itemClick"
+                              @item-checked="itemChecked"
                               @item-drag-start="itemDragStart"
                               @item-drag-end="itemDragEnd"
                               @item-drop-before = "itemDropBefore"
@@ -298,6 +302,7 @@
                         arguments[2].preventDefault()
                         console.log('contextmenu')
 
+                        node.model.select();
                         // Mark active node
                         vm.tree.setEditingNode(node);
 
@@ -310,8 +315,8 @@
                         "text": "Same but with checkboxes",
                         "children": [
                             {
-                                "text": "initially selected",
-                                "selected": true
+                                "text": "initially checked",
+                                "checked": true
                             },
                             {
                                 "text": "custom icon",
@@ -343,8 +348,8 @@
                         "opened": true,
                         "children": [
                             {
-                                "text": "initially selected",
-                                "selected": true
+                                "text": "initially checked",
+                                "checked": true
                             },
                             {
                                 "text": "custom icon",
@@ -390,8 +395,8 @@
                         "text": "Same but with checkboxes",
                         "children": [
                             {
-                                "text": "initially selected",
-                                "selected": true
+                                "text": "initially checked",
+                                "checked": true
                             },
                             {
                                 "text": "custom icon",
@@ -423,8 +428,8 @@
                         "opened": true,
                         "children": [
                             {
-                                "text": "initially selected",
-                                "selected": true
+                                "text": "initially checked",
+                                "checked": true
                             },
                             {
                                 "text": "custom icon",
@@ -470,8 +475,8 @@
                         "text2": "Same but with checkboxes",
                         "children2": [
                             {
-                                "text2": "initially selected",
-                                "selected": true
+                                "text2": "initially checked",
+                                "checked": true
                             },
                             {
                                 "text2": "custom icon",
@@ -503,8 +508,8 @@
                         "opened": true,
                         "children2": [
                             {
-                                "text2": "initially selected",
-                                "selected": true
+                                "text2": "initially checked",
+                                "checked": true
                             },
                             {
                                 "text2": "custom icon",
@@ -533,6 +538,86 @@
                     },
                     {
                         "text2": "And wholerow selection"
+                    }
+                ],
+                datax: [
+                    {
+                        "text": "Same but with checkboxes",
+                        "children": [
+                            {
+                                "text": "initially checked",
+                                "checked": true
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-danger"
+                            },
+                            {
+                                "text": "initially open",
+                                "icon": "fa fa-folder icon-state-default",
+                                "opened": true,
+                                "children": [
+                                    {
+                                        "text": "Another node"
+                                    }
+                                ]
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-warning"
+                            },
+                            {
+                                "text": "disabled node",
+                                "icon": "fa fa-check icon-state-success",
+                                "disabled": true
+                            }
+                        ]
+                    },
+                    {
+                        "text": "Same but with checkboxes",
+                        "opened": true,
+                        "children": [
+                            {
+                                "text": "initially checked",
+                                "checked": true
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-danger"
+                            },
+                            {
+                                "text": "initially open",
+                                "icon": "fa fa-folder icon-state-default",
+                                "opened": true,
+                                "children": [
+                                    {
+                                        "text": "Another node"
+                                    }
+                                ]
+                            },
+                            {
+                                "text": "custom icon",
+                                "icon": "fa fa-warning icon-state-warning"
+                            },
+                            {
+                                "text": "disabled node",
+                                "icon": "fa fa-check icon-state-success",
+                                "disabled": true
+                            }
+                        ]
+                    },
+                    {
+                        "text": "And wholerow selection"
+                    },
+                    {
+                        "text": "drag disabled",
+                        "icon": "fa fa-warning icon-state-danger",
+                        "draggable": false
+                    },
+                    {
+                        "text": "drop disabled",
+                        "icon": "fa fa-warning icon-state-danger",
+                        "drop": false
                     }
                 ],
                 asyncData: [],
@@ -575,6 +660,9 @@
             itemClick (node) {
                 this.tree.setEditingNode(node);
                 console.log(node.model.text + ' clicked !')
+            },
+            itemChecked(node) {
+                console.log(node.model.text + ' check toggled !')
             },
             itemDragStart (node,item,draggedItem) {
                 console.log(node.model.text + ' drag start !')
@@ -639,8 +727,8 @@
             },
             customItemClick: function (node ,item, e) {
                 e.stopPropagation()
-                var index = node.parentItem.indexOf(item)
-                node.parentItem.splice(index, 1)
+                var index = node.parentSiblings.indexOf(item)
+                node.parentSiblings.splice(index, 1)
             },
             customItemClickWithCtrl: function () {
                 console.log('click + ctrl')

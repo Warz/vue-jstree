@@ -8,13 +8,15 @@
         @dragenter.stop.prevent="onDragState(true)"
         @dragleave.stop.prevent="onDragState(false)"
         @drop.stop.prevent="handleItemDrop($event, _self, _self.model)"
-        @dblclick.stop.prevent="onItemDoubleClick($event,_self)">
+        @dblclick.stop.prevent="onItemDoubleClick($event,_self)"
+        @click.stop.prevent="handleItemClick"
+        >
 
         <div role="presentation" :class="wholeRowClasses" v-if="isWholeRow">&nbsp;</div>
         <div :class="dropCss"></div>
         <i class="tree-icon tree-ocl" role="presentation" @click="handleItemToggle"></i>
         <div :class="anchorClasses"  v-on="events">
-            <i class="tree-icon tree-checkbox" role="presentation" @click.exact="handleItemClick" v-if="showCheckbox && !model.loading"></i>
+            <i class="tree-icon tree-checkbox" role="presentation" @click.exact="handleItemCheck" v-if="showCheckbox && !model.loading"></i>
             <slot :vm="this" :model="model">
                 <i :class="themeIconClasses" role="presentation" v-if="!model.loading"></i>
                 <span class="tree-text" v-html="model[textFieldName]"></span>
@@ -32,10 +34,11 @@
                        :show-checkbox="showCheckbox"
                        :allow-transition="allowTransition"
                        :height= "height"
-                       :parent-item="model[childrenFieldName]"
+                       :parentSiblings="model[childrenFieldName]"
                        :draggable="draggable"
                        :drag-over-background-color="dragOverBackgroundColor"
                        :on-item-click="onItemClick"
+                       :on-item-checked="onItemChecked"
                        :on-item-toggle="onItemToggle"
                        :on-item-drag-start="onItemDragStart"
                        :on-item-drag-end="onItemDragEnd"
@@ -51,7 +54,7 @@
                     <slot :vm="_.vm" :model="_.model">
                         <i :class="_.vm.themeIconClasses" role="presentation" v-if="!model.loading"></i>
                         <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @keydown="_.model.editingKeyDown" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
-                        <span class="tree-text" v-html="_.model[textFieldName]" v-else></span>
+                        <span class="tree-text" v-html="_.model[textFieldName]" @click.exact="handleItemClick" v-else></span>
                     </slot>
                 </template>
             </tree-item>
@@ -83,10 +86,13 @@
           showCheckbox: {type: Boolean, default: false},
           allowTransition: {type: Boolean, default: true},
           height: {type: Number, default: 24},
-          parentItem: {type: Array},
+          parentSiblings: {type: Array},
           draggable: {type: Boolean, default: false},
           dragOverBackgroundColor: {type: String},
           onItemClick: {
+              type: Function, default: () => false
+          },
+          onItemChecked : {
               type: Function, default: () => false
           },
           onItemToggle: {
@@ -116,7 +122,7 @@
           return {
               isHover: false,
               isDragEnter: false,
-              isSelected:false,
+              //isSelected:false,
               model: this.data,
               maxHeight: 0,
               events: {},
@@ -180,15 +186,18 @@
               return [
                   {'tree-anchor': true},
                   {'tree-disabled': this.model.disabled},
+                  {'tree-checked': this.model.checked},
                   {'tree-selected': this.model.selected},
-                  {'tree-hovered': this.isHover}
+                  {'tree-focused': this.model.focused},
+                  {'tree-cut': this.model.cut},
+                  {'tree-hovered': this.isHover && !this.model.selected}
               ]
           },
           wholeRowClasses () {
               return [
                   {'tree-wholerow': true},
-                  {'tree-wholerow-clicked': this.model.selected},
-                  {'tree-wholerow-hovered': this.isHover}
+                  {'tree-wholerow-clicked': this.model.checked},
+                  {'tree-wholerow-hovered': this.isHover && !this.model.selected}
               ]
           },
           themeIconClasses () {
@@ -278,9 +287,13 @@
                   }
               }
           },
-          handleItemClick (e) {
+          handleItemCheck(e) {
               if (this.model.disabled) return;
-              this.model.selected = !this.model.selected;
+              this.model.checked = !this.model.checked;
+              this.onItemChecked(this, e)
+          },
+          handleItemClick (e) {
+              this.model.toggleSelect();
               this.onItemClick(this, e)
           },
           handleItemMouseOver () {

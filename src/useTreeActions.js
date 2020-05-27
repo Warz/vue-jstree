@@ -3,6 +3,11 @@ import { ref, watch,computed,onMounted,onUnmounted, reactive, toRefs, watchEffec
 export default function useTreeActions(editingNode) {
 
     const cutNode = ref(null);
+    /**
+     * Array holding all the nodes cut (node and it's children) so that they can be cleared easily on paste
+     * @type Ref<Array>
+     */
+    const cutNodes = ref([]);
     const copyNode = ref(null);
     const pendingPaste = computed(cutNode.value !== null || copyNode.value !== null);
 
@@ -63,12 +68,16 @@ export default function useTreeActions(editingNode) {
     function copy() {
         // deepClone object to save current state of the copied node:
         copyNode.value = JSON.parse(JSON.stringify(editingNode.value.model));
+        clearCuts();
+
+
     }
 
     /**
      * Initiate cut state
      */
     function cut() {
+        recursiveCut(editingNode.value.model);
         cutNode.value = editingNode.value;
         copyNode.value = null
     }
@@ -79,10 +88,11 @@ export default function useTreeActions(editingNode) {
      */
     function removeNode(item) {
         if (editingNode.value.model.id !== undefined) {
-            var index = editingNode.value.parentItem.indexOf(editingNode.value.model);
-            editingNode.value.parentItem.splice(index, 1)
+            var index = editingNode.value.parentSiblings.indexOf(editingNode.value.model);
+            editingNode.value.parentSiblings.splice(index, 1)
         }
     }
+
     /**
      * Paste item(s) and reset cut state
      */
@@ -90,6 +100,9 @@ export default function useTreeActions(editingNode) {
         if( ! pendingPaste) {
             return;
         }
+
+        clearAttributes();
+        clearCuts();
 
         if(copyNode.value) {
             let stripped = idCleanup(copyNode.value);
@@ -109,7 +122,32 @@ export default function useTreeActions(editingNode) {
             cutNode.value.model.deleteNode(cutNode.value);
         }
 
+
         cutNode.value = null;
+    }
+
+    function clearAttributes() {
+        cutNodes.value.forEach(node => {
+            node.unselect();
+        })
+        // todo copyNodes support?
+    }
+
+    function clearCuts() {
+        cutNodes.value.forEach(node => {
+            node.cut = false;
+        });
+    }
+    function recursiveCut(item) {
+
+        item.cut = true;
+
+        item.children.forEach(child => {
+            recursiveCut(child);
+        });
+
+        item.cut = true;
+        cutNodes.value.push(item);
     }
 
     /**

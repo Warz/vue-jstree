@@ -14,6 +14,7 @@ export default function TreeNode(tree,item) {
      */
     function initNode(tree,item)
     {
+
         // Create node model and merge extra attributes:
         let node = Object.assign(
             new Model(
@@ -39,13 +40,14 @@ export default function TreeNode(tree,item) {
             this[textFieldName] = item[textFieldName] || '';
             this[valueFieldName] = item[valueFieldName] || item[textFieldName];
             this.icon = item.icon || '';
-            this.focused = item.focused || false; // focused/active node
             this.opened = item.opened || collapse;
-            this.selected = item.selected || false; // checked
+            this.focused = item.focused || false; // focused/active node (has been clicked on and user has NOT clicked elsewhere which means the item is focused)
+            this.selected = item.selected || false; // item has been clicked on (the last item clicked) - item can be selected without focused
+            this.checked = item.checked || false; // checkbox is ticked
             this.disabled = item.disabled || false;
             this.draggable = item.draggable || true; // the old !dragDisabled
             this.drop = item.drop || true; // the old !dropDisabled
-
+            this.cut = item.cut || false; // if cut = true the item is currently involved in a cut action
             this.loading = item.loading || false;
             this.editing = item.editing || false; // Is user editing the node ? (usually input field for text)
 
@@ -54,13 +56,13 @@ export default function TreeNode(tree,item) {
 
         node.addBefore = function (data, selectedNode) {
             let newItem = initNode(tree,data)
-            let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
-            selectedNode.parentItem.splice(index, 0, newItem)
+            let index = selectedNode.parentSiblings.findIndex(t => t.id === node.id)
+            selectedNode.parentSiblings.splice(index, 0, newItem)
         }
         node.addAfter = function (data, selectedNode) {
             let newItem = initNode(tree,data)
-            let index = selectedNode.parentItem.findIndex(t => t.id === node.id) + 1
-            selectedNode.parentItem.splice(index, 0, newItem)
+            let index = selectedNode.parentSiblings.findIndex(t => t.id === node.id) + 1
+            selectedNode.parentSiblings.splice(index, 0, newItem)
         }
         node.addChild = function (data) {
             let newItem = initNode(tree, data)
@@ -115,7 +117,7 @@ export default function TreeNode(tree,item) {
             var swapItem = Object.assign({}, draggedItem);
 
             // remove the dragged item from the parent list of items in preparation of placing it somewhere else
-            draggedItem.parentItem.splice(draggedItem.index, 1)
+            draggedItem.parentSiblings.splice(draggedItem.index, 1)
 
             // add item as child
             anchorNode[tree.childrenFieldName].push(swapItem.item);
@@ -126,10 +128,10 @@ export default function TreeNode(tree,item) {
         node.moveLeftTo = function (draggedItem, anchorNode, oriIndex) {
 
             let index = oriIndex;
-            let isSameParents = draggedItem.parentItem === anchorNode.parentItem;
+            let isSameParents = draggedItem.parentSiblings === anchorNode.parentSiblings;
             let isFurtherDown = draggedItem.index < oriIndex;
 
-            draggedItem.parentItem.splice(draggedItem.index, 1);
+            draggedItem.parentSiblings.splice(draggedItem.index, 1);
 
             if (isSameParents && isFurtherDown) {
                 // The array of items will have it's index changed with -1 if you pull out an item
@@ -138,15 +140,15 @@ export default function TreeNode(tree,item) {
                 index--;
             }
 
-            anchorNode.parentItem.splice(index, 0, draggedItem.item);
+            anchorNode.parentSiblings.splice(index, 0, draggedItem.item);
         }
         node.moveRightTo = function (draggedItem, anchorNode, oriIndex) {
 
             let index = oriIndex + 1; // + 1 to place it below item
-            let isSameParents = draggedItem.parentItem === anchorNode.parentItem;
+            let isSameParents = draggedItem.parentSiblings === anchorNode.parentSiblings;
             let isFurtherDown = draggedItem.index < oriIndex;
 
-            draggedItem.parentItem.splice(draggedItem.index, 1);
+            draggedItem.parentSiblings.splice(draggedItem.index, 1);
 
             if (isSameParents && isFurtherDown) {
                 // The array of items will have it's index changed with -1 if you pull out an item
@@ -155,12 +157,12 @@ export default function TreeNode(tree,item) {
                 index--;
             }
 
-            anchorNode.parentItem.splice(index, 0, draggedItem.item);
+            anchorNode.parentSiblings.splice(index, 0, draggedItem.item);
 
         }
         node.deleteNode = function (selectedNode) {
-            let index = selectedNode.parentItem.findIndex(t => t.id === node.id)
-            selectedNode.parentItem.splice(index, 1)
+            let index = selectedNode.parentSiblings.findIndex(t => t.id === node.id)
+            selectedNode.parentSiblings.splice(index, 1)
         }
         node.cancelEditing = function () {
             if(node.editing) {
@@ -169,12 +171,10 @@ export default function TreeNode(tree,item) {
             }
         }
         node.editingKeyDown = function(e) {
-
+                // Ctrl + A will select all the text in the input field
                 if (e.keyCode == 65 && e.ctrlKey) {
                     e.target.select()
                 }
-
-
         }
 
         /**
@@ -208,6 +208,24 @@ export default function TreeNode(tree,item) {
         node.isDraggable = function() {
             return node.draggable;
         }
+
+        node.toggleSelect = function() {
+            node.focused = !node.focused;
+            node.selected = !node.selected;
+            tree.unselectExcept(node);
+        }
+        node.unselect = function() {
+            node.focused = false;
+            node.selected = false;
+        }
+        node.select = function() {
+            node.focused = true;
+            node.selected = true;
+            tree.unselectExcept(node);
+        }
+
+        // The vue instance of the tree has an id
+        node.treeId = tree._uid;
 
         return node
     }

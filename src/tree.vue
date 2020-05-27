@@ -12,10 +12,11 @@
                        :show-checkbox="showCheckbox"
                        :allow-transition="allowTransition"
                        :height="sizeHeight"
-                       :parent-item="data"
+                       :parentSiblings="data"
                        :draggable="draggable"
                        :drag-over-background-color="dragOverBackgroundColor"
                        :on-item-click="onItemClick"
+                       :on-item-checked="onItemChecked"
                        :on-item-toggle="onItemToggle"
                        :on-item-drag-start="onItemDragStart"
                        :on-item-drag-end="onItemDragEnd"
@@ -29,7 +30,9 @@
                        :is-any-dragging="isAnyDragging"
 
             >
+                <!-- using slot from tree-item and assigning all variables to _ --->
                 <template slot-scope="_">
+                    <!-- creating a slot that can be consumed by App.vue and set up vm and model as usable slot variables in App.vue  -->
                     <slot :vm="_.vm" :model="_.model">
                         <i :class="_.vm.themeIconClasses" role="presentation" v-if="!_.model.loading"></i>
                         <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @keydown="_.model.editingKeyDown" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
@@ -128,14 +131,16 @@
              * @param nodes
              */
             initializeNodes(nodes) {
+
                 if (nodes && nodes.length > 0) {
                     for (let i in nodes) {
                         nodes[i] = this.initializeNode(nodes[i]);
                     }
                 }
+
             },
             initializeNode(item) {
-                return TreeNode(this,item);
+                return new TreeNode(this,item); // todo: put initialization stuff in setup() ?
             },
             initializeLoading() {
                 var item = {}
@@ -164,7 +169,30 @@
                     }
                 }
             },
+            // unselect all nodes except one
+            unselectExcept(node) {
+                let rootChildren = this.$children; // todo replace $children (vue-specific) with data access ?
+
+                rootChildren.forEach(matchedNode => {
+
+                    if(matchedNode.model.id !== node.id) {
+                        matchedNode.model.unselect();
+                    }
+
+                    let item = matchedNode.model;
+                    this.handleRecursionNodeChildren(item,child => {
+
+                        if(child.id !== node.id) {
+                            child.unselect();
+                        }
+
+                    });
+                });
+            },
             onItemClick(targetNode, e) {
+                this.$emit('item-click', targetNode, targetNode.model, e)
+            },
+            onItemChecked(targetNode, e) {
                 if (this.multiple) {
                     if (this.allowBatch) {
                         this.handleBatchSelectItems(targetNode)
@@ -172,18 +200,20 @@
                 } else {
                     this.handleSingleSelectItems(targetNode)
                 }
-                this.$emit('item-click', targetNode, targetNode.model, e)
+                this.$emit('item-checked', targetNode, targetNode.model, e)
             },
+            // todo rename checked
             handleSingleSelectItems(targetNode) {
                 this.handleRecursionNodeChilds(this, node => {
-                    if (node.model) node.model.selected = false
+                    if (node.model) node.model.checked = false
                 })
-                targetNode.model.selected = true
+                targetNode.model.checked = true
             },
+            // todo rename checked
             handleBatchSelectItems(targetNode) {
                 this.handleRecursionNodeChilds(targetNode, node => {
                     if (node.model.disabled) return
-                    node.model.selected = targetNode.model.selected
+                    node.model.checked = targetNode.model.checked
                 })
             },
             onItemToggle(targetNode, e) {
@@ -247,8 +277,8 @@
 
                     this.draggedItem = {
                         item: draggedNode.model,
-                        parentItem: draggedNode.parentItem,
-                        index: draggedNode.parentItem.findIndex(t => t.id === draggedNode.model.id),
+                        parentSiblings: draggedNode.parentSiblings,
+                        index: draggedNode.parentSiblings.findIndex(t => t.id === draggedNode.model.id),
                     }
 
                 }else{
@@ -258,8 +288,8 @@
                     this.draggedElm = e.target
                     this.draggedItem = {
                         item: draggedNode.model,
-                        parentItem: draggedNode.parentItem,
-                        index: draggedNode.parentItem.findIndex(t => t.id === draggedNode.model.id)
+                        parentSiblings: draggedNode.parentSiblings,
+                        index: draggedNode.parentSiblings.findIndex(t => t.id === draggedNode.model.id)
                     }
 
                 }
@@ -347,13 +377,13 @@
                         this.$emit('item-drop', targetNode, targetNode.model, this.draggedItem, e)
 
                     }
-                    else if (targetNode.parentItem) {
+                    else if (targetNode.parentSiblings) { // ps: parentSiblings can contain multiple parents
                         /** Item is droped before or under existing item ****/
 
                         if (targetNode.parentId) newParent = targetNode.parentId;
 
                         // Find position of destination item in the parent group
-                        var oriIndex = targetNode.parentItem.findIndex(node => node.id === targetNode.model.id);
+                        var oriIndex = targetNode.parentSiblings.findIndex(node => node.id === targetNode.model.id);
 
                         var anchor_modificator = '';
                         if (position === DropPosition.before) { //before anchor node
@@ -375,6 +405,21 @@
             }
         },
         created() {
+
+            if(this.data && this.data[0] && this.data[0].treeId) {
+                // Each tree creates it's own instance of tree.vue (this) - that can be an issue when we are using
+                // the same data because the latest tree created will be the tree.vue instance used in the Models
+                // (see TreeNode) and that results in updating the wrong data (?) when using methods such as $children
+                //
+                // Still not 100% sure about this issue, for now it works wonders to disable multiple trees using the
+                // same data source. If we figure out a better way to access this.tree (such as $this.$children) then
+                // we can consider restoring support for using same data source.
+                //
+                // todo: look more into this issue and possible replace $this.$children (?)
+
+                throw "You cannot use the same tree data object/json for multiple trees";
+            }
+
             this.initializeNodes(this.data)
         },
         mounted() {
