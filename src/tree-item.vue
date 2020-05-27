@@ -17,10 +17,7 @@
         <i class="tree-icon tree-ocl" role="presentation" @click="handleItemToggle"></i>
         <div :class="anchorClasses"  v-on="events">
             <i class="tree-icon tree-checkbox" role="presentation" @click.exact="handleItemCheck" v-if="showCheckbox && !model.loading"></i>
-            <slot :vm="this" :model="model">
-                <i :class="themeIconClasses" role="presentation" v-if="!model.loading"></i>
-                <span class="tree-text" v-html="model[textFieldName]"></span>
-            </slot>
+            <slot :vm="this" :model="model"></slot>
         </div>
         <ul role="group" ref="group" class="tree-children" v-if="isFolder" :style="groupStyle">
             <tree-item v-for="(child, index) in model[childrenFieldName]"
@@ -51,11 +48,7 @@
                        :is-any-dragging="isAnyDragging"
             >
                 <template slot-scope="_">
-                    <slot :vm="_.vm" :model="_.model">
-                        <i :class="_.vm.themeIconClasses" role="presentation" v-if="!model.loading"></i>
-                        <input @keyup.esc="_.model.cancelEditing" @keyup.enter="_.model.cancelEditing" @keydown="_.model.editingKeyDown" @blur="_.model.cancelEditing" v-model="_.model[textFieldName]" v-if="_.model.editing">
-                        <span class="tree-text" v-html="_.model[textFieldName]" @click.exact="handleItemClick" v-else></span>
-                    </slot>
+                    <slot :vm="_.vm" :model="_.model"></slot>
                 </template>
             </tree-item>
         </ul>
