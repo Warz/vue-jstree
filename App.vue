@@ -246,7 +246,7 @@
             <li><a href="" @click.prevent="tree.action.new">New</a></li>
             <li><a href="" @click.prevent="tree.action.cut">Cut</a></li>
             <li><a href="" @click.prevent="tree.action.copy">Copy</a></li>
-            <li><a href="" @click.prevent="tree.action.paste" :class="{'paste-disabled' : !tree.pendingPaste}">Paste</a></li>
+            <li><a href="" @click.prevent="tree.action.paste" :class="{'paste-disabled' : !tree.canPaste()}">Paste</a></li>
             <li><a href="" @click.prevent="tree.action.remove">Delete</a></li>
         </vue-context>
     </div>
@@ -267,7 +267,7 @@
 
             const editingNode = ref(null);
 
-            const { action, pendingPaste } = useTreeActions(editingNode);
+            const { action, pendingPaste, canPaste } = useTreeActions(editingNode);
 
             function setEditingNode(value) {
                 editingNode.value = value
@@ -279,6 +279,7 @@
                 "tree" : {
                     editingNode,
                     pendingPaste,
+                    canPaste,
                     action,
                     setEditingNode
                 }

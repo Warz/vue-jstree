@@ -179,19 +179,19 @@ export default function TreeNode(tree,item) {
 
         /**
          * Check if node is in children (recursive) (or if matching self)
-         * @param targetNode
+         * @param targetItem
          * @param draggedNode
          * @returns {boolean}
          */
-        node.isOrContains = function(targetNode,draggedNode) {
+        node.isOrContains = function(targetItem,draggedNode) {
             draggedNode = draggedNode || node;
 
             for(let child of draggedNode[tree.childrenFieldName]) {
-                if(child.isOrContains(targetNode,child)) {
+                if(child.isOrContains(targetItem,child)) {
                     return true;
                 }
             }
-            return draggedNode.id === targetNode.model.id;
+            return draggedNode.id === targetItem.id;
         }
         /**
          * Is drop (target)
@@ -207,6 +207,22 @@ export default function TreeNode(tree,item) {
          */
         node.isDraggable = function() {
             return node.draggable;
+        }
+
+        node.isValidDragDrop = function(position) {
+
+            // if tree is not draggable or the draggeditem does not exist we cant drop
+            if ( ! tree.draggable || !tree.isAnyDragging()) return false;
+
+            // If dropping into target it must allow drops:
+            if (position === "2" && ! node.isDrop()) return false;
+
+            if( ! tree.isDraggingBetweenTrees()) {
+                // Make sure you don't drag node on itself or any of it's children
+                if(tree.draggedItem.item.isOrContains(node)) return false;
+            }
+
+            return true
         }
 
         node.toggleSelect = function() {

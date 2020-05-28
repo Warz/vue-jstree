@@ -25,7 +25,6 @@
                        :expand-timer="expandTimer"
                        :expand-timer-time-out="expandTimerTimeOut"
                        :show-drop-position="showDropPosition"
-                       :allowed-to-drop="allowedToDrop"
                        :current-is-draggable="currentIsDraggable"
                        :is-any-dragging="isAnyDragging"
 
@@ -325,21 +324,6 @@
                 }
                 this.$emit("item-drag-end", targetNode, targetNode.model, e)
             },
-            allowedToDrop (targetNode, position) { // todo, move this into tree-node.js module?
-
-                // if tree is not draggable or the draggeditem does not exist we cant drop
-                if ( ! this.draggable || !this.isAnyDragging()) return false;
-
-                // If dropping into target it must allow drops:
-                if (position === DropPosition.inside && ! targetNode.model.isDrop()) return false;
-
-                if( ! this.isDraggingBetweenTrees()) {
-                    // Make sure you don't drag node on itself or any of it's children
-                    if(this.draggedItem.item.isOrContains(targetNode)) return false;
-                }
-
-                return true
-            },
             onItemDrop(e, targetNode, position) {
 
                 if (!this.draggable)
@@ -366,7 +350,7 @@
 
                     var newParent = '';
 
-                    if (!this.allowedToDrop(targetNode, position)) return false;
+                    if (!targetNode.model.isValidDragDrop(position)) return false;
 
                     if (position === DropPosition.inside) {
                         /** Item is droped on the other item (folder) ****/

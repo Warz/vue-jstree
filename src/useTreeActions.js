@@ -8,8 +8,9 @@ export default function useTreeActions(editingNode) {
      * @type Ref<Array>
      */
     const cutNodes = ref([]);
+    const copyNodes = ref([]);
     const copyNode = ref(null);
-    const pendingPaste = computed(cutNode.value !== null || copyNode.value !== null);
+    const pendingPaste = computed(()  => cutNode.value !== null || copyNode.value !== null);
 
     /**
      * Create a new item inside selected
@@ -66,11 +67,11 @@ export default function useTreeActions(editingNode) {
      * Initiate copy state
      */
     function copy() {
+        recursiveCopy(editingNode.value.model);
+        clearAttributes();
         // deepClone object to save current state of the copied node:
         copyNode.value = JSON.parse(JSON.stringify(editingNode.value.model));
         clearCuts();
-
-
     }
 
     /**
@@ -104,6 +105,8 @@ export default function useTreeActions(editingNode) {
         clearAttributes();
         clearCuts();
 
+        if( ! editingNode.value.model.isDrop()) return false;
+
         if(copyNode.value) {
             let stripped = idCleanup(copyNode.value);
             editingNode.value.model.addChild(stripped);
@@ -124,13 +127,20 @@ export default function useTreeActions(editingNode) {
 
 
         cutNode.value = null;
+        cutNodes.value = [];
+    }
+
+    function canPaste() {
+        return pendingPaste.value && editingNode.value && editingNode.value.model.isDrop();
     }
 
     function clearAttributes() {
         cutNodes.value.forEach(node => {
             node.unselect();
         })
-        // todo copyNodes support?
+        copyNodes.value.forEach(node => {
+            node.unselect();
+        })
     }
 
     function clearCuts() {
@@ -138,6 +148,14 @@ export default function useTreeActions(editingNode) {
             node.cut = false;
         });
     }
+    function recursiveCopy(item) {
+        item.children.forEach(child => {
+            recursiveCopy(child);
+        });
+
+        copyNodes.value.push(item);
+    }
+
     function recursiveCut(item) {
 
         item.cut = true;
@@ -187,6 +205,7 @@ export default function useTreeActions(editingNode) {
 
             }
         }),
-        pendingPaste
+        pendingPaste,
+        canPaste
     }
 }

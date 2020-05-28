@@ -44,7 +44,6 @@
                        :expand-timer="expandTimer"
                        :expand-timer-time-out="expandTimerTimeOut"
                        :show-drop-position="showDropPosition"
-                       :allowed-to-drop="allowedToDrop"
                        :is-any-dragging="isAnyDragging"
             >
                 <template slot-scope="_">
@@ -96,9 +95,6 @@
           },
           onItemDragEnd: {
               type: Function, default: () => false
-          },
-          allowedToDrop: {
-              type: Function, default: () => true
           },
           onItemDrop: {
               type: Function, default: () => false
@@ -369,7 +365,7 @@
                             dropCss = 'tree-marker-' + position
                         }
 
-                        if (!this.allowedToDrop(targetNode, position)) {
+                        if (!targetNode.model.isValidDragDrop(position)) {
 
                                 // set background color to red to indicate that dropping here is not allowed
                                 targetNode.$el.style.backgroundColor = '#ff928d';
