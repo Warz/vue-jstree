@@ -98,6 +98,7 @@ export default function useTreeActions(editingNode) {
      * Paste item(s) and reset cut state
      */
     function paste() {
+
         if( ! pendingPaste) {
             return;
         }
@@ -115,7 +116,6 @@ export default function useTreeActions(editingNode) {
         if(cutNode.value) {
             // clone it
             let clonedCutNode = Object.assign({},cutNode.value);
-
             if( editingNode.value.model === clonedCutNode.model) {
                 return;
             }
@@ -124,7 +124,6 @@ export default function useTreeActions(editingNode) {
             editingNode.value.model.addChild(clonedCutNode.model);
             cutNode.value.model.deleteNode(cutNode.value);
         }
-
 
         cutNode.value = null;
         cutNodes.value = [];

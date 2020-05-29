@@ -255,8 +255,9 @@
 <script>
 
     import { VueContext } from 'vue-context';
-    import useMultiTree from "./src/useMultiTree";
-    import useTreeActions from "./src/useTreeActions";
+    //import useMultiTree from "./src/useMultiTree";
+    //import useTreeActions from "./src/useTreeActions";
+    import {useMultiTree, useTreeActions} from './src/index.js'
     import {ref} from "@vue/composition-api";
     export default {
         name: 'app',
@@ -267,7 +268,7 @@
 
             const editingNode = ref(null);
 
-            const { action, pendingPaste, canPaste } = useTreeActions(editingNode);
+            const { action, canPaste } = useTreeActions(editingNode);
 
             function setEditingNode(value) {
                 editingNode.value = value
@@ -278,7 +279,6 @@
                 multiTree2 : useMultiTree(),
                 "tree" : {
                     editingNode,
-                    pendingPaste,
                     canPaste,
                     action,
                     setEditingNode
