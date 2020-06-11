@@ -19,12 +19,13 @@
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
-    "vue-context": "^5.1.0",
+    "vue-context": "^5.2.0",
     "vue-timers": "^1.10.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.4.3",
-    "@babel/preset-env": "^7.4.3",
+    "@babel/core": "^7.10.2",
+    "@babel/preset-env": "^7.10.2",
+    "@vue/composition-api": "^0.6.1",
     "babel-core": "^6.26.3",
     "babel-loader": "^6.4.1",
     "babel-preset-env": "^1.7.0",
@@ -38,10 +39,9 @@
     "vue-loader": "^14.2.2",
     "vue-template-compiler": "^2.6.10",
     "webpack": "^2.7.0",
-    "webpack-dev-server": "^2.11.5",
-    "@vue/composition-api": "^0.5.0"
+    "webpack-dev-server": "^2.11.5"
   },
   "peerDependencies": {
-    "@vue/composition-api": "^0.5.0"
+    "@vue/composition-api": "^0.6.1"
   }
 }
